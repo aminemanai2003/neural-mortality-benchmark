@@ -1,0 +1,31 @@
+countries:
+  - code: FRATNP
+    name: France
+  - code: GBRTENW
+    name: England & Wales
+  - code: USA
+    name: United States
+  - code: JPN
+    name: Japan
+  - code: ITA
+    name: Italy
+  - code: ESP
+    name: Spain
+  - code: SWE
+    name: Sweden
+  - code: NLD
+    name: Netherlands
+
+years:
+  start: 1950
+  end: 2023
+
+ages:
+  start: 0
+  end: 100
+
+sexes: [Male, Female]
+
+paths:
+  raw: data/raw
+  processed: data/processed

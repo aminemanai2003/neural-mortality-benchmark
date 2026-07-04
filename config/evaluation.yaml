@@ -1,0 +1,29 @@
+rolling_origin:
+  first_origin: 1990
+  last_origin: 2018
+  step: 2
+
+horizons: [1, 5, 10, 20]
+
+metrics:
+  - rmse_log_mx
+  - mae_log_mx
+  - rmse_e0
+  - rmse_annuity_65
+
+confidence:
+  level: 0.95
+  n_simulations: 1000
+
+scenarios:
+  short_history:
+    train_lengths: [20, 30, 50]
+  mortality_shock:
+    train_end: 2019
+    eval_years: [2020, 2021, 2022, 2023]
+  age_groups:
+    young: [0, 19]
+    working: [20, 64]
+    elderly: [65, 100]
+
+seeds: [42, 123, 456, 789, 1024]
