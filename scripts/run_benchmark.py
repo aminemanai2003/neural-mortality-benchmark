@@ -17,6 +17,7 @@ from mortality.data.loader import load_country
 from mortality.evaluation.rolling_origin import rolling_origin_eval
 from mortality.evaluation.scenarios import mortality_shock_eval
 from mortality.models.classical import CLASSICAL_MODELS
+from mortality.models.hybrid import HYBRID_MODELS
 from mortality.models.neural import NEURAL_MODELS
 
 
@@ -30,6 +31,10 @@ def get_all_model_factories(quick: bool = False) -> dict[str, callable]:
     neural_kw = {"epochs": 10, "patience": 5} if quick else {"epochs": 200, "patience": 20}
     for name, factory in NEURAL_MODELS.items():
         factories[name] = lambda f=factory, kw=neural_kw: f(**kw)
+
+    hybrid_kw = {"epochs": 10, "patience": 5} if quick else {"epochs": 200, "patience": 20}
+    for name, cls in HYBRID_MODELS.items():
+        factories[name] = lambda c=cls, kw=hybrid_kw: c(**kw)
 
     return factories
 
