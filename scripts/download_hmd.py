@@ -8,10 +8,8 @@ The HMD uses session-based auth: we POST to /Account/Login, then download with c
 """
 from __future__ import annotations
 
-import io
 import os
 import sys
-import zipfile
 from pathlib import Path
 
 import requests
@@ -70,7 +68,6 @@ def download_country(
         resp = session.get(url, timeout=60)
 
         if resp.status_code != 200:
-            zip_url = f"{HMD_HOST}/File/GetDocument/hmd.v6/{country_code}/STATS/Mx_1x1.txt"
             if resp.status_code == 404:
                 print(f"  WARNING: {filename} not found at expected URL, trying zip...")
                 zip_url_alt = (
