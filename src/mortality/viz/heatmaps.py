@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
-import seaborn as sns
+import numpy as np
 
 
 def plot_log_mx_heatmap(

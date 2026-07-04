@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from mortality.data.loader import load_country, parse_hmd_file
 from mortality.actuarial.life_table import life_expectancy_at
+from mortality.data.loader import load_country
 
 DATA_AVAILABLE = True
 try:
