@@ -9,6 +9,9 @@ class MortalityModel(ABC):
     """Common interface for all mortality models."""
 
     name: str = "base"
+    # Ages the forecast covers. None means "same age grid as passed to fit".
+    # Models restricting the range (e.g. CBD on 60+) must set this in fit.
+    forecast_ages: np.ndarray | None = None
 
     @abstractmethod
     def fit(

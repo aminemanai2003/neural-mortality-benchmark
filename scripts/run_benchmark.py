@@ -15,7 +15,11 @@ import yaml
 
 from mortality.data.loader import load_country
 from mortality.evaluation.rolling_origin import rolling_origin_eval
-from mortality.evaluation.scenarios import mortality_shock_eval
+from mortality.evaluation.scenarios import (
+    age_group_eval,
+    mortality_shock_eval,
+    short_history_eval,
+)
 from mortality.models.classical import CLASSICAL_MODELS
 from mortality.models.hybrid import HYBRID_MODELS
 from mortality.models.neural import NEURAL_MODELS
@@ -101,6 +105,23 @@ def main() -> None:
                     exposures=data.get("exposures"), deaths=data.get("deaths"),
                 )
                 all_results.extend(shock_results)
+
+                # Decision-framework scenarios (skipped in --quick to keep it fast).
+                if not args.quick:
+                    all_results.extend(age_group_eval(
+                        factory,
+                        data["log_mx"], data["ages"], data["years"],
+                        origins=origins[-3:], horizons=[5, 10],
+                        country=code, sex="Total",
+                        exposures=data.get("exposures"), deaths=data.get("deaths"),
+                    ))
+                    all_results.extend(short_history_eval(
+                        factory,
+                        data["log_mx"], data["ages"], data["years"],
+                        train_lengths=[20, 30, 50], horizons=[5, 10],
+                        country=code, sex="Total",
+                        exposures=data.get("exposures"), deaths=data.get("deaths"),
+                    ))
 
             except Exception as e:
                 print(f"ERROR: {e}")

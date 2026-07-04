@@ -1,6 +1,9 @@
-"""Feed-Forward Neural Network with entity embeddings (Richman & Wüthrich, 2019).
+"""Feed-Forward Neural Network with an age embedding (Richman & Wüthrich, 2019 style).
 
-Direct mortality surface model: inputs are (age, year, sex, country) embeddings.
+Direct mortality surface model. Age is an entity embedding; the calendar year is a
+CONTINUOUS normalized feature so the model can extrapolate to future years. Using an
+embedding for the year would leave future-year vectors untrained, producing noise at
+forecast time -- hence the continuous encoding.
 Output is log m(x,t).
 """
 from __future__ import annotations
@@ -16,16 +19,14 @@ class _FFNNNet(nn.Module):
     def __init__(
         self,
         n_ages: int,
-        n_years: int,
         embedding_dim: int = 8,
         hidden_sizes: tuple[int, ...] = (128, 64, 32),
         dropout: float = 0.1,
     ):
         super().__init__()
         self.age_emb = nn.Embedding(n_ages, embedding_dim)
-        self.year_emb = nn.Embedding(n_years, embedding_dim)
 
-        input_dim = embedding_dim * 2
+        input_dim = embedding_dim + 1  # age embedding + continuous year
         layers = []
         for hs in hidden_sizes:
             layers.extend([nn.Linear(input_dim, hs), nn.ReLU(), nn.Dropout(dropout)])
@@ -33,10 +34,9 @@ class _FFNNNet(nn.Module):
         layers.append(nn.Linear(input_dim, 1))
         self.mlp = nn.Sequential(*layers)
 
-    def forward(self, age_idx: torch.Tensor, year_idx: torch.Tensor) -> torch.Tensor:
+    def forward(self, age_idx: torch.Tensor, year_val: torch.Tensor) -> torch.Tensor:
         a = self.age_emb(age_idx)
-        y = self.year_emb(year_idx)
-        x = torch.cat([a, y], dim=-1)
+        x = torch.cat([a, year_val.unsqueeze(-1)], dim=-1)
         return self.mlp(x).squeeze(-1)
 
 
@@ -67,6 +67,11 @@ class FFNNEmbeddings(MortalityModel):
         self._years: np.ndarray | None = None
         self._log_mx_mean: float = 0.0
         self._log_mx_std: float = 1.0
+        self._year_mean: float = 0.0
+        self._year_std: float = 1.0
+
+    def _norm_year(self, year_index: np.ndarray | float) -> np.ndarray | float:
+        return (year_index - self._year_mean) / self._year_std
 
     def fit(
         self,
@@ -85,11 +90,18 @@ class FFNNEmbeddings(MortalityModel):
         self._log_mx_std = log_mx.std()
         target = (log_mx - self._log_mx_mean) / self._log_mx_std
 
+        # Normalize the year index (0..n_years-1) so future indices extrapolate smoothly.
+        year_indices = np.arange(self._n_years)
+        self._year_mean = year_indices.mean()
+        self._year_std = year_indices.std() + 1e-8
+
         age_grid, year_grid = np.meshgrid(
-            np.arange(self._n_ages), np.arange(self._n_years), indexing="ij"
+            np.arange(self._n_ages), year_indices, indexing="ij"
         )
         age_idx = torch.tensor(age_grid.ravel(), dtype=torch.long)
-        year_idx = torch.tensor(year_grid.ravel(), dtype=torch.long)
+        year_val = torch.tensor(
+            self._norm_year(year_grid.ravel()), dtype=torch.float32
+        )
         y_all = torch.tensor(target.ravel(), dtype=torch.float32)
 
         n = len(y_all)
@@ -99,8 +111,7 @@ class FFNNEmbeddings(MortalityModel):
 
         torch.manual_seed(self.seed)
         self.net = _FFNNNet(
-            self._n_ages, self._n_years + 50,
-            self.embedding_dim, self.hidden_sizes, self.dropout,
+            self._n_ages, self.embedding_dim, self.hidden_sizes, self.dropout,
         )
         optimizer = torch.optim.Adam(self.net.parameters(), lr=self.lr, weight_decay=1e-4)
 
@@ -109,16 +120,16 @@ class FFNNEmbeddings(MortalityModel):
         wait = 0
 
         self.net.train()
-        for epoch in range(self.epochs):
+        for _epoch in range(self.epochs):
             optimizer.zero_grad()
-            pred = self.net(age_idx[train_idx], year_idx[train_idx])
+            pred = self.net(age_idx[train_idx], year_val[train_idx])
             loss = nn.functional.mse_loss(pred, y_all[train_idx])
             loss.backward()
             optimizer.step()
 
             self.net.eval()
             with torch.no_grad():
-                val_pred = self.net(age_idx[val_idx], year_idx[val_idx])
+                val_pred = self.net(age_idx[val_idx], year_val[val_idx])
                 val_loss = nn.functional.mse_loss(val_pred, y_all[val_idx]).item()
             self.net.train()
 
@@ -141,8 +152,13 @@ class FFNNEmbeddings(MortalityModel):
 
         with torch.no_grad():
             for t in range(h):
-                year_idx = torch.full((self._n_ages,), self._n_years + t, dtype=torch.long)
-                pred = self.net(age_idx, year_idx).numpy()
+                year_index = self._n_years + t
+                year_val = torch.full(
+                    (self._n_ages,),
+                    float(self._norm_year(year_index)),
+                    dtype=torch.float32,
+                )
+                pred = self.net(age_idx, year_val).numpy()
                 results[:, t] = pred * self._log_mx_std + self._log_mx_mean
 
         return results

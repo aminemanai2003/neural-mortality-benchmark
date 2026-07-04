@@ -49,8 +49,15 @@ def build_scorecard(
         # Short history: how well does the model perform with limited data
         short_metrics = model_df[model_df["metric"].str.contains("hist20|hist30", na=False)]
         if len(short_metrics) > 0:
-            scores[model]["short_history"] = _rank_to_score(
-                short_metrics["value"].mean(), models, benchmark_df, "hist"
+            peer_means = [
+                benchmark_df[
+                    (benchmark_df["model_name"] == m)
+                    & (benchmark_df["metric"].str.contains("hist20|hist30", na=False))
+                ]["value"].mean()
+                for m in models
+            ]
+            scores[model]["short_history"] = _relative_score(
+                short_metrics["value"].mean(), peer_means
             )
         else:
             h5 = model_df[(model_df["horizon"] <= 5) & (model_df["metric"] == "rmse_log_mx")]
@@ -182,7 +189,3 @@ def _relative_score(value: float, all_values: list[float],
     except ValueError:
         return 3
     return max(1, min(5, 5 - int(4 * rank / max(1, n - 1))))
-
-
-def _rank_to_score(value: float, models, df: pd.DataFrame, pattern: str) -> int:
-    return 3

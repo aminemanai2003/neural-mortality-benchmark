@@ -18,25 +18,38 @@ def short_history_eval(
     exposures: np.ndarray | None = None,
     deaths: np.ndarray | None = None,
 ) -> list[EvalResult]:
-    """Evaluate model with truncated history."""
+    """Evaluate model with truncated training history.
+
+    The origin is placed so that max(horizons) evaluation years remain in the
+    FULL series; only the training window is truncated to `length` years.
+    """
+    horizons = horizons or [5, 10]
     results = []
+    n_years = log_mx.shape[1]
+    max_h = max(horizons)
+
+    origin_idx = n_years - 1 - max_h
+    if origin_idx < 1:
+        return results
+    origin_year = int(years[origin_idx])
+
     for length in train_lengths:
-        if length >= log_mx.shape[1]:
-            continue
-        start = log_mx.shape[1] - length - 20
+        start = origin_idx - length + 1
         if start < 0:
-            start = 0
-        end = start + length
-        log_mx_sub = log_mx[:, start:end]
-        years_sub = years[start:end]
-        exp_sub = exposures[:, start:end] if exposures is not None else None
-        dth_sub = deaths[:, start:end] if deaths is not None else None
+            continue
+
+        # Window starts `length` years before the origin but keeps the full
+        # tail so the evaluator can find the truth for every horizon.
+        log_mx_sub = log_mx[:, start:]
+        years_sub = years[start:]
+        exp_sub = exposures[:, start:] if exposures is not None else None
+        dth_sub = deaths[:, start:] if deaths is not None else None
 
         sub_results = rolling_origin_eval(
             model_factory, log_mx_sub, ages, years_sub,
             exp_sub, dth_sub,
-            origins=[int(years_sub[-5])],
-            horizons=horizons or [5, 10],
+            origins=[origin_year],
+            horizons=horizons,
             country=country, sex=sex,
         )
         for r in sub_results:

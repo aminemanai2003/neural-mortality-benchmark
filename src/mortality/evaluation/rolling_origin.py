@@ -60,12 +60,27 @@ def rolling_origin_eval(
         model.fit(log_mx_train, ages, years_train, exp_train, dth_train)
         train_time = time.time() - t0
 
+        # Ages the model actually forecasts (CBD restricts to 60+).
+        model_ages = getattr(model, "forecast_ages", None)
+        if model_ages is None:
+            model_ages = ages
+        # Position of the model's ages within the full evaluation age grid.
+        age_pos = np.searchsorted(ages, model_ages)
+        # Actuarial metrics (e0 from birth, annuity ä65) are only meaningful when
+        # the forecast covers the whole lifespan grid — from birth up to the old
+        # ages — otherwise e0 is truncated and ä65 is zero or nonsense.
+        full_grid = (
+            len(model_ages) == len(ages)
+            and int(ages[0]) == 0
+            and int(ages[-1]) >= 90
+        )
+
         for h in horizons:
             end_idx = origin_idx + h
             if end_idx >= log_mx.shape[1]:
                 continue
 
-            log_mx_true = log_mx[:, origin_idx + 1 : end_idx + 1]
+            log_mx_true = log_mx[age_pos, origin_idx + 1 : end_idx + 1]
             fc = model.forecast(h)
 
             n_fc = min(fc.shape[1], log_mx_true.shape[1])
@@ -80,12 +95,13 @@ def rolling_origin_eval(
                     model.name, country, sex, origin, h, metric_name, val, train_time
                 ))
 
-            for metric_name, metric_fn in ACTUARIAL_METRIC_REGISTRY.items():
-                mx_true = np.exp(log_mx_true)
-                mx_pred = np.exp(fc)
-                val = metric_fn(mx_true, mx_pred)
-                results.append(EvalResult(
-                    model.name, country, sex, origin, h, metric_name, val, train_time
-                ))
+            if full_grid:
+                for metric_name, metric_fn in ACTUARIAL_METRIC_REGISTRY.items():
+                    mx_true = np.exp(log_mx_true)
+                    mx_pred = np.exp(fc)
+                    val = metric_fn(mx_true, mx_pred)
+                    results.append(EvalResult(
+                        model.name, country, sex, origin, h, metric_name, val, train_time
+                    ))
 
     return results

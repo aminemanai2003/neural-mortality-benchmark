@@ -36,6 +36,7 @@ class CairnsBlakeDowd(MortalityModel):
         # Select age range
         mask = (ages >= self.age_range[0]) & (ages <= self.age_range[1])
         self._ages = ages[mask]
+        self.forecast_ages = self._ages
         mx_sub = np.exp(log_mx[mask, :])
 
         qx = 1.0 - np.exp(-mx_sub)

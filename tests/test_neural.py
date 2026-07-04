@@ -36,3 +36,17 @@ class TestNeuralModels:
         model.fit(d["log_mx"], d["ages"], d["years"])
         sim = model.simulate(5, n_paths=10)
         assert sim.shape == (10, 101, 5)
+
+    def test_ffnn_forecast_is_smooth(self, france_data):
+        """FFNN uses a continuous year feature, so a fixed age forecasts smoothly.
+
+        Guards against the earlier bug where future-year embeddings were untrained,
+        producing noisy (non-monotone, high-variance) forecasts.
+        """
+        d = france_data
+        model = NEURAL_MODELS["ffnn_embeddings"](epochs=60, patience=15, seed=42)
+        model.fit(d["log_mx"], d["ages"], d["years"])
+        fc = model.forecast(10)
+        age_50 = fc[50, :]
+        # Successive-year steps must be small (no random jumps from untrained vectors).
+        assert np.max(np.abs(np.diff(age_50))) < 0.1

@@ -29,7 +29,9 @@ def life_table(mx: np.ndarray, radix: int = 100_000) -> dict[str, np.ndarray]:
     for x in range(n - 2, -1, -1):
         Tx[x] = Tx[x + 1] + Lx[x]
 
-    ex = np.where(lx[:n] > 0, Tx / lx[:n], 0.0)
+    ex = np.zeros(n)
+    positive = lx[:n] > 0
+    ex[positive] = Tx[positive] / lx[:n][positive]
 
     return {"qx": qx, "lx": lx, "dx": dx, "Lx": Lx, "Tx": Tx, "ex": ex}
 
