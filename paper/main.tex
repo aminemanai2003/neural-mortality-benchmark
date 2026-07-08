@@ -1,414 +1,547 @@
-\documentclass[12pt,a4paper]{article}
+\documentclass[11pt,a4paper]{article}
 
-% ── Packages ──
+% ── Typography: Times-like text and math (newtx), tight professional layout ──
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
-\usepackage{amsmath,amssymb,amsfonts}
-\usepackage{graphicx}
+\usepackage{newtxtext}
+\usepackage{newtxmath}
+\usepackage{microtype}
+\usepackage[margin=1in]{geometry}
+
+% ── Structure & floats ──
+\usepackage{amsmath}
 \usepackage{booktabs}
-\usepackage{hyperref}
-\usepackage[margin=2.5cm]{geometry}
-\usepackage{natbib}
-\usepackage{caption}
-\usepackage{subcaption}
 \usepackage{multirow}
 \usepackage{array}
+\usepackage{caption}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta}
+\usepackage{natbib}
 \usepackage{xcolor}
-\usepackage{algorithm}
-\usepackage{algorithmic}
 
-\hypersetup{colorlinks=true, linkcolor=blue!60!black, citecolor=blue!60!black, urlcolor=blue!60!black}
+% ── Links: dark blue, PDF bookmarks for navigation (no printed TOC) ──
+\definecolor{linkblue}{RGB}{0,51,153}
+\usepackage[colorlinks=true,linkcolor=linkblue,citecolor=linkblue,
+            urlcolor=linkblue,bookmarksnumbered=true]{hyperref}
 
-\newcolumntype{R}{>{\raggedleft\arraybackslash}p{1.1cm}}
+% ── Captions: small, bold label ──
+\captionsetup{font=small,labelfont=bf,skip=6pt}
 
-\title{When Should Actuaries Trust Neural Networks?\\
-\large A Comprehensive Benchmark of Classical and Neural Mortality Models\\with a Hybrid LC-ResNet and Practical Decision Framework}
+% ── Numeric table column (right-aligned) ──
+\newcolumntype{R}{>{\raggedleft\arraybackslash}p{1.15cm}}
 
-\author{Amine Manai\\
-\textit{Master 1 Actuariat, Le Mans Universit\'e}\\
-\texttt{amine.manai@esprit.tn}\\[6pt]
-\small July 2026
-}
-
-\date{}
+% ── Vertical breathing room around display math ──
+\setlength{\abovedisplayskip}{10pt}
+\setlength{\belowdisplayskip}{10pt}
 
 \begin{document}
 
-\maketitle
+% ══════════════════════════════════════════════════════════════
+% Title block — centered, generous white space, no logos
+% ══════════════════════════════════════════════════════════════
+\begin{center}
+{\LARGE\bfseries When Should Actuaries Trust Neural Networks?\par}
+\vspace{6pt}
+{\large\bfseries A Benchmark of Classical and Neural Mortality Models\\
+with a Hybrid LC-ResNet and a Practical Decision Framework\par}
+\vspace{18pt}
+{\normalsize Amine MANAI\par}
+\vspace{3pt}
+{\small ESPRIT School of Engineering\par}
+{\small Data Science \& Actuarial Engineering\par}
+\vspace{3pt}
+{\small\texttt{amine.manai@esprit.tn}\par}
+\vspace{6pt}
+{\small July 2026\par}
+\end{center}
+
+\vspace{10pt}
 
 % ══════════════════════════════════════════════════════════════
 \begin{abstract}
-We present a comprehensive benchmark comparing 15 mortality forecasting models---8~classical (implemented from scratch), 6~neural network architectures, and an original hybrid---across 8~countries from the Human Mortality Database (1950--2023). Using rolling-origin validation with actuarial metrics (life expectancy $e_0$, annuity values $\ddot{a}_{65}$), we address practical questions that existing studies leave unanswered: which model to use with short historical data, which is most robust to mortality shocks (COVID-19), and when the added complexity of neural networks is justified.
+\noindent
+We benchmark 15 mortality forecasting models---8 classical models implemented from scratch, 6 neural network architectures, and an original hybrid---on 8 countries from the Human Mortality Database (1950--2023). Rolling-origin validation with actuarial metrics (life expectancy $e_0$, annuity factor $\ddot{a}_{65}$) addresses questions that existing studies leave open: which model to use with short historical data, which is robust to mortality shocks such as COVID-19, and when the added complexity of neural networks is justified. We introduce \textbf{LC-ResNet}, a hybrid that couples a Poisson Lee--Carter skeleton with a neural residual correction shrunk by $e^{-\lambda h}$ over the forecast horizon $h$, preserving long-run stability and interpretability while capturing short-term non-linearities. Key findings: the age-specific random walk with drift outperforms every structural model on log-rate accuracy at all horizons; recurrent $\kappa_t$ replacements improve on classical Lee--Carter at short horizons but degrade sharply on actuarial metrics at $h=20$; during the COVID-19 shock, models that do \emph{not} extrapolate a trend are the most robust; and LC-ResNet is the most accurate structural model at $h=1$ and for young ages. On a 1{,}000-life French annuity portfolio, the inter-model provision spread reaches 6.3 million EUR, and the Solvency~II longevity SCR varies by 7\% across models---model choice is a capital decision.
 
-Our main contributions are: (1)~a practical decision framework mapping data characteristics to optimal model choice; (2)~\textbf{LC-ResNet}, a hybrid model combining a Poisson Lee-Carter skeleton with a neural residual correction subject to horizon-dependent shrinkage $\exp(-\lambda h)$, ensuring stable long-horizon extrapolation while capturing short-term non-linearities; and (3)~an actuarial case study quantifying model risk in EUR on a French annuity portfolio under Solvency~II.
+\vspace{8pt}
+\noindent\textbf{Keywords:} Mortality Forecasting \,$\cdot$\, Lee--Carter \,$\cdot$\, Deep Learning \,$\cdot$\, Longevity Risk \,$\cdot$\, Model Risk \,$\cdot$\, Solvency II \,$\cdot$\, Benchmark
 
-Key findings: the random walk with drift remains a strong baseline at all horizons; neural $\kappa_t$ replacements (LSTM, GRU) outperform classical Lee-Carter at short horizons ($h \le 5$) but offer diminishing gains beyond; LC-ResNet ranks among the top models for young ages while preserving interpretability; and the inter-model spread on a 1,000-life annuity portfolio reaches 6.3~million~EUR, underscoring the materiality of model risk.
-
-\medskip
-\noindent\textbf{Keywords:} mortality forecasting, Lee-Carter, neural networks, LSTM, model risk, longevity risk, Solvency~II, annuity pricing, decision framework.
-
-\medskip
-\noindent\textbf{JEL:} C45, C52, C53, G22, J11.
+\vspace{4pt}
+\noindent\textbf{JEL:} C45 \,$\cdot$\, C52 \,$\cdot$\, C53 \,$\cdot$\, G22 \,$\cdot$\, J11
 \end{abstract}
-
-\newpage
-\tableofcontents
-\newpage
 
 % ══════════════════════════════════════════════════════════════
 \section{Introduction}
 \label{sec:intro}
 
-Longevity risk---the risk that policyholders live longer than expected---is a primary concern for life insurers and pension funds. Under Solvency~II, the capital requirement for longevity risk (SCR\textsubscript{longevity}) typically represents 5--15\% of the best estimate of annuity provisions, making the choice of mortality model a capital allocation decision rather than a purely academic exercise.
+Longevity risk---the risk that policyholders live longer than expected---is a primary concern for life insurers and pension funds. Under Solvency~II, the capital requirement for longevity risk typically represents 5--15\% of the best estimate of annuity provisions, so the choice of mortality model is a capital allocation decision rather than a purely academic one.
 
-The Lee-Carter family of models \citep{lee1992modeling} has dominated actuarial practice for over three decades. In parallel, neural network approaches have shown promising results in recent literature \citep{richman2019neural, nigri2019deep, perla2021brief}. Yet no study provides a practical guide for actuaries to choose between classical and neural models based on their specific context: data availability, forecast horizon, age segment of interest, and regulatory constraints.
+The Lee--Carter family \citep{lee1992modeling} has dominated actuarial practice for three decades. Neural network approaches have shown promising results in recent literature \citep{richman2019neural,nigri2019deep,perla2021brief}, yet no study offers a practical guide for choosing between classical and neural models given the constraints practitioners actually face: data availability, forecast horizon, age segment, and regulatory interpretability.
 
-This paper fills that gap by benchmarking 15~models across 8~countries with rolling-origin validation, then distilling the results into a decision framework and quantifying the financial consequences through an actuarial case study.
-
-\subsection{Contributions}
+This paper fills that gap with four contributions:
 
 \begin{enumerate}
-    \item A \textbf{comprehensive benchmark} of 15~models (8~classical, 6~neural, 1~hybrid) on 8~countries from the Human Mortality Database, evaluated with both statistical and actuarial metrics under rolling-origin validation.
-    \item \textbf{LC-ResNet}, an original hybrid model combining a Poisson Lee-Carter skeleton with a neural residual network and horizon-dependent shrinkage, designed to preserve interpretability while capturing short-term non-linearities.
-    \item A \textbf{practical decision framework} mapping data characteristics (history length, forecast horizon, age segment, interpretability needs) to optimal model choice, based on scenario-specific evaluations.
-    \item An \textbf{actuarial case study} pricing a French annuity portfolio and quantifying model risk in EUR, including a Solvency~II longevity shock analysis.
+    \item \textbf{A comprehensive benchmark} of 15 models (8 classical, 6 neural, 1 hybrid) on 8 countries, evaluated with statistical \emph{and} actuarial metrics under rolling-origin validation (Sections~\ref{sec:models}--\ref{sec:results}).
+    \item \textbf{LC-ResNet}, an original hybrid coupling a Poisson Lee--Carter skeleton with a neural residual network under horizon-dependent shrinkage (Section~\ref{sec:lcresnet}).
+    \item \textbf{A decision framework} mapping history length, horizon, age segment, and interpretability needs to a recommended model (Section~\ref{sec:decision}).
+    \item \textbf{An actuarial case study} pricing a French annuity portfolio and quantifying model risk in EUR under a Solvency~II longevity shock (Section~\ref{sec:casestudy}).
 \end{enumerate}
 
-\subsection{Related work}
+Figure~\ref{fig:pipeline} summarizes the benchmark pipeline.
 
-\citet{lee1992modeling} introduced the seminal Lee-Carter model; subsequent extensions include Lee-Miller \citep{lee2001evaluating}, Booth-Maindonald-Smith \citep{booth2002applying}, the Poisson formulation of \citet{brouhns2002poisson}, the two-factor CBD model for older ages \citep{cairns2006two}, and the functional data approach of \citet{hyndman2007robust}. On the neural side, \citet{nigri2019deep} applied LSTMs to the $\kappa_t$ index, while \citet{richman2019neural} proposed a feed-forward network with entity embeddings for multi-population mortality. \citet{perla2021brief} provided a systematic review of deep learning methods for mortality forecasting.
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    node distance=7mm,
+    box/.style={draw=black!60, rounded corners=2pt, minimum width=42mm,
+                minimum height=8mm, align=center, font=\small},
+    wide/.style={draw=black!60, rounded corners=2pt, minimum width=118mm,
+                 minimum height=8mm, align=center, font=\small},
+    arr/.style={-{Stealth[length=2.2mm]}, black!70, thin}
+]
+\node[box] (hmd) {HMD data (8 countries, 1950--2023)};
+\node[box, below=of hmd] (prep) {Preprocessing: $1{\times}1$ rates,\\trailing-year trimming, flooring};
+\node[wide, below=of prep, minimum height=20mm] (models)
+  {\textbf{15 mortality models}\\[1pt]
+   Classical: LC, LM, BMS, PLC, CBD, HU, baselines\\
+   Neural: LSTM, GRU, Bi-LSTM, Transformer, FFNN, CNN \,$\cdot$\, Hybrid: LC-ResNet};
+\node[box, below=of models] (eval) {Rolling-origin evaluation\\origins 1990--2018, $h \in \{1,5,10,20\}$};
+\node[box, below=of eval, xshift=-31mm] (metrics) {Metrics: RMSE $\ln m_{x,t}$,\\$e_0$, $\ddot{a}_{65}$; DM tests};
+\node[box, below=of eval, xshift=31mm] (scen) {Scenarios: short history,\\COVID shock, age groups};
+\node[wide, below=of eval, yshift=-14mm] (out) {Decision framework \& EUR case study};
+\draw[arr] (hmd) -- (prep);
+\draw[arr] (prep) -- (models);
+\draw[arr] (models) -- (eval);
+\draw[arr] (eval) -- (metrics);
+\draw[arr] (eval) -- (scen);
+\draw[arr] (metrics) -- (out);
+\draw[arr] (scen) -- (out);
+\end{tikzpicture}
+\caption{Benchmark pipeline: from raw HMD data to the decision framework and the actuarial case study.}
+\label{fig:pipeline}
+\end{figure}
 
-Our work differs by (i)~benchmarking all these approaches under identical conditions with rolling-origin validation, (ii)~evaluating on actuarial rather than purely statistical metrics, and (iii)~proposing a hybrid model and a practical decision framework.
+% ══════════════════════════════════════════════════════════════
+\section{Related Work}
+\label{sec:related}
+
+\citet{lee1992modeling} introduced the seminal bilinear model for U.S.\ mortality. Extensions include the $e_0$-adjusted variant of \citet{lee2001evaluating}, the fitting-period selection of \citet{booth2002applying}, the Poisson likelihood formulation of \citet{brouhns2002poisson}, the two-factor CBD model for older ages \citep{cairns2006two}, and the functional data approach of \citet{hyndman2007robust}. \citet{booth2006demographic} review this literature and document the surprising strength of na\"ive extrapolation.
+
+On the neural side, \citet{nigri2019deep} replace the random-walk forecast of $\kappa_t$ with an LSTM; \citet{richman2019neural} propose a feed-forward network with entity embeddings for multi-population mortality; \citet{perla2021brief} treat mortality forecasting as time-series regression with convolutional and recurrent architectures.
+
+Our work differs in three ways: (i)~all approaches are benchmarked under identical conditions---same data, same rolling origins, same hyperparameter budget; (ii)~evaluation includes actuarial metrics and an EUR-denominated case study rather than log-rate accuracy alone; (iii)~we propose a hybrid model and a practical decision framework.
 
 % ══════════════════════════════════════════════════════════════
 \section{Data}
 \label{sec:data}
 
-We use data from the \textbf{Human Mortality Database} (HMD; \url{www.mortality.org}) for 8~countries: France (FRATNP), England \& Wales (GBRTENW), United States (USA), Japan (JPN), Italy (ITA), Spain (ESP), Sweden (SWE), and Netherlands (NLD). For each country, we extract $1 \times 1$ (single-year age, single calendar year) central death rates $m_{x,t}$ and exposures $E_{x,t}$ for ages 0--100 and years 1950--2023, total population (both sexes combined).
+We use $1 \times 1$ central death rates $m_{x,t}$ and exposures $E_{x,t}$ from the Human Mortality Database (HMD)\footnote{\url{https://www.mortality.org}. HMD data are free but not redistributable; the repository documents how to download them.} for eight countries: France, England \& Wales, USA, Japan, Italy, Spain, Sweden, and the Netherlands. Ages span 0--100, years 1950--2023 (total population). The window includes the COVID-19 shock (2020--2023), used as a natural out-of-sample stress test.
 
-The period 1950--2023 is chosen to include sufficient historical depth for long-horizon evaluation and to encompass the COVID-19 mortality shock (2020--2023), which serves as a natural out-of-sample stress test.
-
-Zero or missing rates are floored at $10^{-6}$ before taking logarithms.
+The central death rate is defined as
+\begin{equation}
+    m_{x,t} = \frac{D_{x,t}}{E_{x,t}},
+\end{equation}
+where $D_{x,t}$ denotes deaths at age $x$ in year $t$ and $E_{x,t}$ the matching central exposure. Zero or missing rates are floored at $10^{-6}$ before taking logarithms. Countries whose series end before 2023 (e.g.\ England \& Wales, last available year 2022) have trailing missing years trimmed rather than imputed.
 
 % ══════════════════════════════════════════════════════════════
 \section{Models}
 \label{sec:models}
 
-All classical models are implemented from scratch in Python using NumPy and SciPy; neural models use PyTorch. All share a common \texttt{MortalityModel} interface (\texttt{fit}, \texttt{forecast}, \texttt{simulate}) to ensure evaluation consistency.
+All classical models are implemented from scratch in Python (NumPy/SciPy); neural models use PyTorch. Every model implements a common interface (\texttt{fit}, \texttt{forecast}, \texttt{simulate}), so the evaluation harness treats all 15 identically.
 
 \subsection{Classical models}
 
-\paragraph{Lee-Carter (LC).} \citet{lee1992modeling}: $\ln m_{x,t} = a_x + b_x \kappa_t + \varepsilon_{x,t}$, estimated by SVD with identifiability constraints $\sum_x b_x = 1$, $\sum_t \kappa_t = 0$, and $\kappa_t$ re-estimated on observed deaths via constrained optimization. Forecast: $\kappa_t$ follows a random walk with drift (RWD).
+\textbf{Lee--Carter (LC).} The bilinear structure
+\begin{equation}
+    \ln m_{x,t} = a_x + b_x\,\kappa_t + \varepsilon_{x,t},
+\end{equation}
+estimated by SVD under the constraints $\sum_x b_x = 1$ and $\sum_t \kappa_t = 0$, with $\kappa_t$ re-estimated on observed death counts. The index $\kappa_t$ is forecast by a random walk with drift.
 
-\paragraph{Lee-Miller (LM).} \citet{lee2001evaluating}: extends LC by adjusting $\kappa_t$ so that the model-implied $e_0$ matches the observed $e_0$ each year, solved via Brent's root-finding algorithm.
+\textbf{Lee--Miller (LM).} Adjusts $\kappa_t$ each year so that the model-implied life expectancy matches the observed $e_0$ \citep{lee2001evaluating}.
 
-\paragraph{Booth-Maindonald-Smith (BMS).} \citet{booth2002applying}: selects the optimal fitting period by testing the linearity of $\kappa_t$ over sub-periods, then applies standard LC on the selected window.
+\textbf{Booth--Maindonald--Smith (BMS).} Selects the fitting period by testing the linearity of $\kappa_t$, then applies LC on the selected window \citep{booth2002applying}.
 
-\paragraph{Poisson Lee-Carter (PLC).} \citet{brouhns2002poisson}: $D_{x,t} \sim \text{Poisson}(E_{x,t} \cdot \exp(a_x + b_x \kappa_t))$, estimated by maximum likelihood via alternating unidimensional Newton-Raphson iterations.
+\textbf{Poisson Lee--Carter (PLC).} Assumes $D_{x,t} \sim \text{Poisson}\!\left(E_{x,t}\, e^{a_x + b_x \kappa_t}\right)$ and maximizes the likelihood by alternating Newton--Raphson updates \citep{brouhns2002poisson}.
 
-\paragraph{Cairns-Blake-Dowd (CBD).} \citet{cairns2006two}: a two-factor model for ages 60--100: $\text{logit}\, q_{x,t} = \kappa_t^{(1)} + \kappa_t^{(2)}(x - \bar{x})$, with bivariate RWD on $(\kappa_t^{(1)}, \kappa_t^{(2)})$.
+\textbf{Cairns--Blake--Dowd (CBD).} For ages 60--100,
+\begin{equation}
+    \operatorname{logit} q_{x,t} = \kappa_t^{(1)} + \kappa_t^{(2)}\,(x - \bar{x}),
+\end{equation}
+with a bivariate random walk with drift on $(\kappa_t^{(1)}, \kappa_t^{(2)})$ \citep{cairns2006two}.
 
-\paragraph{Hyndman-Ullah (HU).} \citet{hyndman2007robust}: functional data analysis with penalized B-spline smoothing, $K$-component functional PCA, and ARIMA forecasting on each score series. We use $K=6$ components.
+\textbf{Hyndman--Ullah (HU).} Penalized-spline smoothing of the age profiles, functional principal component decomposition ($K=6$), and ARIMA forecasting of the scores \citep{hyndman2007robust}.
 
-\paragraph{Baselines.} Random walk with drift (RWD) on age-specific $\ln m_{x,t}$, and frozen rates (last observed year projected forward).
+\textbf{Baselines.} An age-specific random walk with drift on $\ln m_{x,t}$, and frozen rates (last observed year held constant). Honest benchmarks require both.
 
 \subsection{Neural models}
 
-All neural models share identical training hyperparameters for benchmark fairness: 200~epochs, patience~20 (early stopping on validation loss), learning rate $10^{-3}$ (Adam, weight decay $10^{-4}$), seed~42.
+For benchmark fairness, every neural model uses the same budget: 200 epochs, early stopping with patience 20, Adam with learning rate $10^{-3}$ and weight decay $10^{-4}$, fixed seed. Architectures are detailed in Appendix~\ref{app:configs}.
 
-\paragraph{Neural $\kappa_t$ models (LSTM, GRU, Bi-LSTM, Transformer).} The Lee-Carter skeleton ($a_x$, $b_x$) is preserved; only the $\kappa_t$ forecast is replaced by a recurrent or attention-based architecture (2~layers, hidden size~64, lookback~20~years). This retains the interpretable age structure while potentially capturing non-linear temporal patterns.
+\textbf{Neural $\kappa_t$ models.} The LC skeleton $(a_x, b_x)$ is retained; only the $\kappa_t$ forecast is replaced by an LSTM, GRU, Bi-LSTM, or a two-layer Transformer encoder operating on a 20-year lookback window.
 
-\paragraph{FFNN with embeddings.} Inspired by \citet{richman2019neural}: an age embedding (dimension~8) concatenated with a continuous normalized year feature, fed through a 3-layer MLP (128--64--32). Outputs $\ln m_{x,t}$ directly.
+\textbf{FFNN with embeddings.} Following \citet{richman2019neural}: an age embedding concatenated with a continuous normalized year feature, mapped by a three-layer perceptron directly to $\ln m_{x,t}$. The continuous year encoding---rather than a year embedding---is what allows extrapolation to unseen future years.
 
-\paragraph{CNN on the mortality surface.} Treats the $(\text{age} \times \text{year})$ matrix as a 2D image; three convolutional layers (16, 32, 64~filters, kernel size~3) with adaptive average pooling predict the next year's mortality profile from a sliding window.
+\textbf{CNN on the mortality surface.} The $(\text{age} \times \text{year})$ matrix is treated as an image; three convolutional layers predict the next annual profile from a sliding window, applied recursively for multi-step forecasts.
 
-\subsection{LC-ResNet: a hybrid model}
+\subsection{LC-ResNet: a hybrid with horizon shrinkage}
 \label{sec:lcresnet}
 
-Our original contribution combines a Poisson Lee-Carter skeleton with a neural residual correction:
+Our proposed hybrid preserves the interpretable LC skeleton and lets a small network correct only what the skeleton misses:
 
 \begin{enumerate}
-    \item \textbf{Fit} a Poisson Lee-Carter to obtain $\hat{a}_x$, $\hat{b}_x$, $\hat{\kappa}_t$.
-    \item \textbf{Compute structured residuals}: $r_{x,t} = \ln m_{x,t} - (\hat{a}_x + \hat{b}_x \hat{\kappa}_t)$.
-    \item \textbf{Train a residual network} $f_\theta$ on features $[\tilde{x}, \tilde{t}, \tilde{b}_x, \tilde{\kappa}_t]$ (normalized) with architecture MLP(64, 32) to predict $r_{x,t}$.
-    \item \textbf{Forecast with shrinkage}: for horizon $h$,
-    \begin{equation}
-        \widehat{\ln m}_{x,t+h} = \underbrace{\hat{a}_x + \hat{b}_x \hat{\kappa}_{t+h}}_{\text{LC skeleton}} + \underbrace{e^{-\lambda h} \cdot f_\theta(\tilde{x}, \widetilde{t+h}, \tilde{b}_x, \widetilde{\kappa}_{t+h})}_{\text{shrunk neural correction}}
-        \label{eq:lcresnet}
-    \end{equation}
+    \item Fit a Poisson Lee--Carter, obtaining $\hat{a}_x, \hat{b}_x, \hat{\kappa}_t$.
+    \item Compute the structured residuals $r_{x,t} = \ln m_{x,t} - (\hat{a}_x + \hat{b}_x \hat{\kappa}_t)$.
+    \item Train a residual network $f_\theta$ (MLP 64--32) on normalized features $(\tilde{x}, \tilde{t}, \tilde{b}_x, \tilde{\kappa}_t)$ to predict $r_{x,t}$.
+    \item Forecast with horizon-dependent shrinkage:
 \end{enumerate}
+\begin{equation}
+    \widehat{\ln m}_{x,T+h}
+    \;=\;
+    \underbrace{\hat{a}_x + \hat{b}_x\,\hat{\kappa}_{T+h}}_{\text{LC skeleton}}
+    \;+\;
+    e^{-\lambda h}\,
+    \underbrace{f_\theta\!\left(\tilde{x},\, \widetilde{T{+}h},\, \tilde{b}_x,\, \tilde{\kappa}_{T+h}\right)}_{\text{neural correction}},
+    \qquad \lambda = 0.1 .
+    \label{eq:lcresnet}
+\end{equation}
 
-The shrinkage factor $e^{-\lambda h}$ (with $\lambda = 0.1$) is the key design choice: at $h=1$, $e^{-0.1} \approx 0.90$, so the neural correction is nearly fully active; at $h=20$, $e^{-2} \approx 0.14$, so the model reverts to stable LC extrapolation. This prevents the common failure mode of neural mortality models---extrapolation instability at long horizons---while preserving short-term flexibility.
-
-The parameters $a_x$, $b_x$, $\kappa_t$ remain fully interpretable and accessible for actuarial reporting, unlike purely neural approaches.
+At $h = 1$ the correction is almost fully active ($e^{-0.1} \approx 0.90$); at $h = 20$ it has decayed to $e^{-2} \approx 0.14$ and the model reverts to the stable LC extrapolation. This directly targets the main failure mode of neural mortality models---long-horizon extrapolation instability---while $(a_x, b_x, \kappa_t)$ remain available for regulatory reporting.
 
 % ══════════════════════════════════════════════════════════════
 \section{Evaluation Protocol}
-\label{sec:evaluation}
+\label{sec:protocol}
 
-\subsection{Rolling-origin validation}
+\textbf{Rolling-origin validation.} For each origin $T_0 \in \{1990, 1992, \ldots, 2018\}$, every model is re-trained from scratch on years $[1950, T_0]$ and evaluated on the following $h \in \{1, 5, 10, 20\}$ years, whenever the truth is available.
 
-We use rolling-origin cross-validation adapted for time series: the model is trained on years $[1950, T_0]$, then evaluated on the subsequent $h$~years. The origin $T_0$ ranges from 1990 to 2018 in steps of~2, and horizons $h \in \{1, 5, 10, 20\}$~years. The model is fully re-trained at each origin---no incremental learning.
+\textbf{Metrics.} RMSE on $\ln m_{x,t}$; RMSE on period life expectancy at birth $e_0$ (in years); RMSE on the whole-life annuity-due factor $\ddot{a}_{65}$ at interest rate $i = 2\%$. Actuarial metrics require the full age grid, so CBD (ages 60+) is evaluated on log-rates only.
 
-\subsection{Metrics}
+\textbf{Significance.} Pairwise Diebold--Mariano tests \citep{diebold1995comparing} with the Harvey--Leybourne--Newbold small-sample and multi-step correction \citep{harvey1997testing}, referenced against a Student-$t$ distribution.
 
-We report both statistical and actuarial metrics:
-
-\begin{itemize}
-    \item \textbf{RMSE on $\ln m_{x,t}$}: root mean squared error on log central death rates.
-    \item \textbf{RMSE on $e_0$}: error on period life expectancy at birth (in years).
-    \item \textbf{RMSE on $\ddot{a}_{65}$}: error on the whole-life annuity-due factor at age~65 (interest rate $i = 2\%$).
-\end{itemize}
-
-Actuarial metrics are computed only when the model covers the full age grid (0--100); the CBD model, restricted to ages 60--100, is evaluated on $\ln m_{x,t}$ only.
-
-\subsection{Statistical testing}
-
-We use the Diebold-Mariano test \citep{diebold1995comparing} with the Harvey-Leybourne-Newbold correction \citep{harvey1997testing} for multi-step autocorrelation and small-sample adjustment, referencing a Student's $t$ distribution.
-
-\subsection{Scenario-specific evaluations}
-
-\begin{itemize}
-    \item \textbf{Short history}: training truncated to 20, 30, or 50~years to assess data-efficiency.
-    \item \textbf{Mortality shock}: training ends in 2019, evaluation on 2020--2023 (COVID-19).
-    \item \textbf{Age groups}: separate evaluation on young (0--19), working (20--64), and elderly (65--100) ages.
-\end{itemize}
+\textbf{Scenarios.} Three targeted experiments feed the decision framework: (i)~\emph{short history}---training truncated to the last 20, 30, or 50 years before the origin; (ii)~\emph{mortality shock}---training up to 2019, evaluation on 2020--2022 (COVID-19); (iii)~\emph{age groups}---separate evaluation on ages 0--19, 20--64, and 65--100.
 
 % ══════════════════════════════════════════════════════════════
 \section{Results}
 \label{sec:results}
 
-The full benchmark produces 29{,}536 observations across 15~models, 8~countries, 15~rolling origins, 7~horizons, and multiple metrics. We report cross-country averages; country-level results are available in the online repository.
+The benchmark yields 29{,}330 result rows (model $\times$ country $\times$ origin $\times$ horizon $\times$ metric). Tables report cross-country averages; per-country files are in the repository. Pre-COVID rolling origins ($T_0 < 2019$) and the COVID shock are reported separately so that neither contaminates the other.
 
-\subsection{Main results: RMSE on $\ln m_{x,t}$}
-
-Table~\ref{tab:rmse_logmx} reports the average RMSE on $\ln m_{x,t}$ by model and horizon.
+\subsection{Accuracy on log death rates}
 
 \begin{table}[htbp]
 \centering
-\caption{RMSE on $\ln m_{x,t}$, averaged across 8 countries (lower is better). Best in \textbf{bold}.}
+\caption{RMSE on $\ln m_{x,t}$ by forecast horizon, averaged over 8 countries and all pre-COVID rolling origins. Lower is better; best full-grid model per column in bold. CBD forecasts ages 60--100 only, so its values are not comparable to full-grid models.}
 \label{tab:rmse_logmx}
 \small
 \begin{tabular}{l RRRR}
 \toprule
-Model & $h=1$ & $h=5$ & $h=10$ & $h=20$ \\
+Model & $h{=}1$ & $h{=}5$ & $h{=}10$ & $h{=}20$ \\
 \midrule
 \multicolumn{5}{l}{\textit{Classical}} \\
-Lee-Carter       & 0.157 & 0.207 & 0.199 & 0.248 \\
-Lee-Miller       & 0.146 & 0.196 & 0.187 & \textbf{0.232} \\
-BMS              & 0.157 & 0.207 & 0.199 & 0.248 \\
-Poisson LC       & 0.193 & 0.244 & 0.231 & 0.272 \\
-CBD (60+ only)   & \textbf{0.081} & \textbf{0.126} & \textbf{0.095} & \textbf{0.120} \\
-Hyndman-Ullah    & 0.318 & 0.351 & 0.329 & 0.355 \\
+Lee--Carter        & 0.156 & 0.177 & 0.199 & 0.248 \\
+Lee--Miller        & 0.145 & 0.166 & 0.187 & 0.232 \\
+BMS                & 0.156 & 0.177 & 0.199 & 0.248 \\
+Poisson LC         & 0.190 & 0.214 & 0.231 & 0.272 \\
+CBD (60+ only)     & 0.076 & 0.087 & 0.095 & 0.120 \\
+Hyndman--Ullah     & 0.316 & 0.322 & 0.329 & 0.355 \\
 \midrule
 \multicolumn{5}{l}{\textit{Baselines}} \\
-Random walk      & 0.103 & 0.155 & 0.146 & 0.203 \\
-Frozen rates     & 0.103 & 0.164 & 0.186 & 0.314 \\
+Random walk        & \textbf{0.100} & \textbf{0.124} & \textbf{0.146} & \textbf{0.203} \\
+Frozen rates       & \textbf{0.100} & 0.133 & 0.186 & 0.314 \\
 \midrule
 \multicolumn{5}{l}{\textit{Neural}} \\
-LSTM $\kappa_t$  & 0.132 & 0.182 & 0.180 & 0.263 \\
-GRU $\kappa_t$   & 0.132 & 0.183 & 0.182 & 0.274 \\
-Bi-LSTM $\kappa_t$ & 0.133 & 0.188 & 0.195 & 0.288 \\
-Transformer $\kappa_t$ & 0.141 & 0.207 & 0.225 & 0.327 \\
-FFNN embeddings  & 0.233 & 0.286 & 0.290 & 0.368 \\
-CNN surface      & 0.151 & 0.221 & 0.240 & 0.448 \\
+LSTM $\kappa_t$    & 0.131 & 0.152 & 0.180 & 0.263 \\
+GRU $\kappa_t$     & 0.130 & 0.152 & 0.182 & 0.274 \\
+Bi-LSTM $\kappa_t$ & 0.132 & 0.157 & 0.195 & 0.288 \\
+Transformer $\kappa_t$ & 0.141 & 0.177 & 0.225 & 0.327 \\
+FFNN embeddings    & 0.231 & 0.257 & 0.290 & 0.367 \\
+CNN surface        & 0.147 & 0.191 & 0.240 & 0.448 \\
 \midrule
 \multicolumn{5}{l}{\textit{Hybrid}} \\
-\textbf{LC-ResNet} & 0.122 & 0.182 & 0.184 & 0.247 \\
+\textbf{LC-ResNet} & 0.120 & 0.152 & 0.184 & 0.247 \\
 \bottomrule
 \end{tabular}
-\\[4pt]
-\footnotesize Note: CBD is evaluated only on ages 60--100, making its RMSE not directly comparable to full-grid models.
 \end{table}
 
-\paragraph{Key observations.}
-
+\noindent\textbf{Key findings.}
 \begin{enumerate}
-    \item The \textbf{random walk with drift is a remarkably strong baseline}, outperforming most classical LC variants and several neural models at all horizons.
-    \item \textbf{Neural $\kappa_t$ models (LSTM, GRU)} improve over classical Lee-Carter at short horizons ($h \le 5$) but offer diminishing or negative gains at $h = 20$.
-    \item \textbf{LC-ResNet} achieves the best non-CBD RMSE at $h = 1$ (0.122) and remains competitive at all horizons. At $h = 20$, it matches Lee-Miller (0.247 vs.\ 0.232), demonstrating the effectiveness of the shrinkage mechanism.
-    \item The \textbf{Transformer and CNN} are the weakest neural architectures, suffering from extrapolation instability at long horizons (RMSE 0.327 and 0.448 at $h=20$).
-    \item \textbf{Hyndman-Ullah} and \textbf{FFNN} underperform across all horizons in this benchmark.
+    \item The \textbf{age-specific random walk with drift dominates every structural model} on log-rate accuracy at every horizon (0.100 at $h{=}1$ to 0.203 at $h{=}20$)---a sobering baseline result consistent with \citet{booth2006demographic}.
+    \item Among structural models, \textbf{LC-ResNet is the most accurate at $h{=}1$} (0.120) and stays competitive throughout, matching the LSTM/GRU at $h{=}5$ and beating every neural model at $h{=}20$ (0.247), where the shrinkage has handed control back to the LC skeleton.
+    \item \textbf{Recurrent $\kappa_t$ models} (LSTM, GRU) beat classical LC at $h \le 10$ but lose that edge at $h{=}20$; the \textbf{Transformer and CNN degrade most} at long horizons (0.327 and 0.448), the classic extrapolation failure of flexible models.
+    \item \textbf{Frozen rates collapse with horizon} (0.100 $\to$ 0.314), as expected for a no-trend baseline: mortality does improve over 20 years.
 \end{enumerate}
 
-\subsection{Actuarial metrics}
-
-Table~\ref{tab:actuarial} reports RMSE on $e_0$ (in years) and on $\ddot{a}_{65}$ (dimensionless).
+\subsection{Actuarial accuracy}
 
 \begin{table}[htbp]
 \centering
-\caption{Actuarial metrics, averaged across 8 countries.}
+\caption{Actuarial metrics at $h{=}5$ and $h{=}20$: RMSE on life expectancy at birth $e_0$ (years) and on the annuity factor $\ddot{a}_{65}$. Averaged over 8 countries, pre-COVID origins. Best per column in bold.}
 \label{tab:actuarial}
 \small
 \begin{tabular}{l RR RR}
 \toprule
 & \multicolumn{2}{c}{RMSE $e_0$ (years)} & \multicolumn{2}{c}{RMSE $\ddot{a}_{65}$} \\
 \cmidrule(lr){2-3} \cmidrule(lr){4-5}
-Model & $h=5$ & $h=20$ & $h=5$ & $h=20$ \\
+Model & $h{=}5$ & $h{=}20$ & $h{=}5$ & $h{=}20$ \\
 \midrule
-Lee-Carter       & 0.495 & 0.832 & 0.212 & 0.397 \\
-Lee-Miller       & \textbf{0.386} & \textbf{0.742} & 0.228 & 0.398 \\
-Poisson LC       & 0.444 & 0.826 & 0.215 & 0.403 \\
-Hyndman-Ullah    & 0.486 & 0.694 & 0.221 & 0.437 \\
-Random walk      & 0.383 & 0.764 & \textbf{0.192} & \textbf{0.395} \\
-LSTM $\kappa_t$  & 0.807 & 2.059 & 0.432 & 1.017 \\
-GRU $\kappa_t$   & 0.815 & 2.181 & 0.429 & 1.065 \\
-\textbf{LC-ResNet} & 0.421 & 0.846 & 0.207 & 0.403 \\
+Lee--Carter        & 0.428 & 0.832 & 0.178 & 0.397 \\
+Lee--Miller        & 0.318 & 0.742 & 0.195 & 0.398 \\
+Poisson LC         & 0.376 & 0.826 & 0.181 & 0.403 \\
+Hyndman--Ullah     & 0.419 & \textbf{0.694} & 0.188 & 0.437 \\
+Random walk        & \textbf{0.315} & 0.764 & \textbf{0.159} & 0.395 \\
+Frozen rates       & 0.607 & 2.417 & 0.272 & 1.096 \\
+LSTM $\kappa_t$    & 0.739 & 2.059 & 0.399 & 1.017 \\
+GRU $\kappa_t$     & 0.749 & 2.181 & 0.397 & 1.065 \\
+Transformer $\kappa_t$ & 1.202 & 2.824 & 0.596 & 1.337 \\
+FFNN embeddings    & 0.557 & 0.787 & 0.316 & \textbf{0.381} \\
+\textbf{LC-ResNet} & 0.353 & 0.846 & 0.174 & 0.403 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-A striking finding is that \textbf{neural $\kappa_t$ models degrade sharply on actuarial metrics} at long horizons: the LSTM's $e_0$ RMSE at $h=20$ is 2.06~years vs.\ 0.74 for Lee-Miller. This is because small systematic biases in $\kappa_t$ forecasts compound through the life table. LC-ResNet avoids this trap thanks to its shrinkage mechanism: at $h=20$, it performs comparably to the classical LC family on $e_0$ and $\ddot{a}_{65}$.
+The central observation is an \textbf{inversion between statistical and actuarial accuracy for recurrent models}: the LSTM beats Lee--Carter on log-rates at $h \le 10$ (Table~\ref{tab:rmse_logmx}) yet its $e_0$ error at $h{=}20$ is 2.06 years against 0.74 for Lee--Miller. Life expectancy integrates the entire mortality surface, so small but systematic biases in the $\kappa_t$ path compound through the life table. LC-ResNet avoids this failure: its shrinkage returns the long-horizon forecast to the LC skeleton, keeping $e_0$ and $\ddot{a}_{65}$ errors at classical levels.
 
-\subsection{Scenario results}
-
-\paragraph{Short history.} Table~\ref{tab:short_history} shows that with only 20~years of training data, model differences narrow considerably. Frozen rates and LC-ResNet perform best; neural $\kappa_t$ models converge to the LC baseline because their recurrent networks lack sufficient training sequences.
+\subsection{COVID-19 shock}
 
 \begin{table}[htbp]
 \centering
-\caption{RMSE $\ln m_{x,t}$ with truncated training history (averaged across countries and horizons).}
-\label{tab:short_history}
+\caption{COVID-19 stress test: models trained through 2019, evaluated on 2020--2022. RMSE on $\ln m_{x,t}$; best full-grid model per column in bold.}
+\label{tab:covid}
 \small
 \begin{tabular}{l RRR}
 \toprule
-Model & 20\,yr & 30\,yr & 50\,yr \\
+Model & 2020 & 2021 & 2022 \\
 \midrule
-Frozen rates     & \textbf{0.296} & -- & \textbf{0.296} \\
-LC-ResNet        & 0.317 & -- & 0.308 \\
-Lee-Carter       & 0.322 & -- & 0.319 \\
-LSTM $\kappa_t$  & 0.321 & -- & 0.317 \\
-Random walk      & 0.328 & -- & 0.307 \\
-Hyndman-Ullah    & 0.485 & -- & 0.480 \\
+Frozen rates       & \textbf{0.149} & \textbf{0.153} & \textbf{0.152} \\
+LSTM $\kappa_t$    & 0.150 & 0.156 & 0.158 \\
+Bi-LSTM $\kappa_t$ & 0.150 & 0.154 & 0.155 \\
+Transformer $\kappa_t$ & 0.150 & 0.154 & 0.153 \\
+LC-ResNet          & 0.152 & 0.167 & 0.183 \\
+Random walk        & 0.153 & 0.164 & 0.173 \\
+CBD (60+ only)     & 0.154 & 0.147 & 0.146 \\
+Lee--Miller        & 0.170 & 0.183 & 0.195 \\
+Lee--Carter        & 0.180 & 0.193 & 0.205 \\
+Poisson LC         & 0.236 & 0.252 & 0.265 \\
+Hyndman--Ullah     & 0.336 & 0.337 & 0.337 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\paragraph{Age groups.} LC-ResNet ranks first for young ages (0--19) with RMSE~0.310, suggesting that the neural residual correction captures non-linearities in infant and child mortality that the linear $b_x \kappa_t$ structure misses. For elderly ages (65--100), the random walk and Hyndman-Ullah perform best, while CBD---despite being designed for this segment---underperforms relative to models that benefit from information in younger ages.
+Under the shock, the ranking flips: \textbf{models that extrapolate no trend (frozen rates) or a dampened trend are the most robust}, because COVID temporarily erased the improvement trend that LC-type models kept projecting. Neural $\kappa_t$ models sit close behind frozen rates. This is a general lesson: trend-following accuracy in calm periods and shock robustness are different competencies, and no model offers both.
+
+\subsection{Short history and age segments}
+
+With training truncated to 20 years, LC-ResNet is the best full-grid structural model (RMSE 0.159 versus 0.165 for LC and 0.173 for the random walk); frozen rates again lead among baselines (0.134). For \textbf{young ages (0--19)}, LC-ResNet ranks first overall (0.228), suggesting the residual network captures infant- and child-mortality non-linearities that the bilinear form misses. For \textbf{elderly ages (65--100)}---the annuity segment---simple approaches win: frozen rates (0.054), Hyndman--Ullah and the random walk (0.068). Full tables appear in Appendix~\ref{app:extra}.
 
 % ══════════════════════════════════════════════════════════════
 \section{Decision Framework}
 \label{sec:decision}
 
-Based on the benchmark results, we propose the following model selection guidelines:
+Table~\ref{tab:decision} distills the benchmark into model selection guidance. The overarching message: \textbf{no single model dominates}; the choice should follow the use case, and the burden of proof is on complexity.
 
 \begin{table}[htbp]
 \centering
-\caption{Practical decision framework for model selection.}
+\caption{Which model to use when. Recommendations follow directly from the scenario results.}
 \label{tab:decision}
 \small
-\begin{tabular}{p{4cm} l p{5cm}}
+\begin{tabular}{p{4.6cm} p{3.2cm} p{6.6cm}}
 \toprule
-Context & Recommended & Rationale \\
+Context & Recommendation & Evidence \\
 \midrule
-Short history ($< 25$\,yr) & RWD & Neural networks lack training data; RWD is robust \\
-Elderly ages (65+), regulatory & CBD & Designed for 60+; standard among regulators \\
-Short horizon ($\le 5$\,yr) & LC-ResNet & Neural correction most active; best at $h=1$ \\
-Medium horizon (5--10\,yr) & Poisson LC & Principled likelihood; stable \\
-Long horizon ($> 10$\,yr) & Lee-Miller & Proven stability; $e_0$-adjusted \\
-Interpretability required & LC-ResNet & LC skeleton is accessible; correction is bounded \\
+Short history ($\le$ 25 yr) & LC-ResNet & Best structural model at hist-20 (Table~\ref{tab:shorthist}) \\
+Shock regime / pandemic     & Frozen rates, neural $\kappa_t$ & Table~\ref{tab:covid}: no-trend models most robust \\
+Long horizon ($>$ 10 yr), provisioning & Lee--Miller & Best structural $\ln m$ and $e_0$ at $h{=}20$ \\
+Short horizon ($\le$ 5 yr)  & LC-ResNet & Best structural model at $h{=}1$, ties LSTM at $h{=}5$ \\
+Elderly segment, regulatory & CBD & Purpose-built for 60+, regulator-standard \\
+Quick unbiased reference    & Random walk & Best log-rate accuracy at every horizon \\
+Interpretability required   & LC-ResNet or LC family & $(a_x, b_x, \kappa_t)$ fully reportable \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The key insight is that \textbf{no single model dominates across all scenarios}. The random walk is surprisingly competitive, and neural $\kappa_t$ replacements are only justified when the training history is long ($\ge 50$~years) and the forecast horizon is short ($\le 5$~years).
+Neural $\kappa_t$ replacements are justified only when the history is long ($\ge 50$ years), the horizon short ($\le 5$ years), and log-rate accuracy---not $e_0$ or annuity accuracy---is the objective. Outside that envelope their added complexity buys little or is actively harmful (Table~\ref{tab:actuarial}).
 
 % ══════════════════════════════════════════════════════════════
 \section{Actuarial Case Study}
 \label{sec:casestudy}
 
-We translate the benchmark results into financial terms using a stylized French annuity portfolio.
-
-\subsection{Setup}
-
-\begin{itemize}
-    \item 1{,}000 pensioners aged 65
-    \item Annual payment: 12{,}000~EUR per person
-    \item Discount rate: $i = 2\%$ (risk-free)
-    \item Mortality projection: each model's 10-year-ahead forecast
-\end{itemize}
-
-\subsection{Annuity pricing}
+\textbf{Setup.} A portfolio of 1{,}000 French pensioners aged 65, each receiving 12{,}000 EUR annually; discount rate $i = 2\%$; mortality from each model's 10-year-ahead forecast on French data.
 
 \begin{table}[htbp]
 \centering
-\caption{Annuity pricing results by model (French mortality data).}
+\caption{Annuity pricing by model. The provision is $1{,}000 \times 12{,}000 \times \ddot{a}_{65}$.}
 \label{tab:pricing}
 \small
 \begin{tabular}{l r r r}
 \toprule
-Model & $\ddot{a}_{65}$ & Provision/person (EUR) & Total (M\,EUR) \\
+Model & $\ddot{a}_{65}$ & Provision / person (EUR) & Total (M\,EUR) \\
 \midrule
-Lee-Carter  & 18.338 & 220{,}050 & 220.05 \\
-Poisson LC  & 18.323 & 219{,}873 & 219.87 \\
-LC-ResNet   & 18.268 & 219{,}217 & 219.22 \\
-Random walk & 18.236 & 218{,}826 & 218.83 \\
-CBD         & 17.816 & 213{,}793 & 213.79 \\
+Lee--Carter  & 18.338 & 220{,}050 & 220.05 \\
+Poisson LC   & 18.323 & 219{,}873 & 219.87 \\
+LC-ResNet    & 18.268 & 219{,}217 & 219.22 \\
+Random walk  & 18.236 & 218{,}826 & 218.83 \\
+CBD          & 17.816 & 213{,}793 & 213.79 \\
 \midrule
-\textbf{Model risk spread} & & & \textbf{6.26} \\
+\textbf{Inter-model spread} & & & \textbf{6.26} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The inter-model spread on total provisions reaches \textbf{6.26~million~EUR}---a material amount driven primarily by the CBD model, which projects higher mortality (lower $\ddot{a}_{65}$) for the elderly segment. Excluding CBD, the spread among full-grid models is 1.22~million~EUR.
-
-\subsection{Solvency~II longevity shock}
-
-Table~\ref{tab:scr} shows the impact of a standard Solvency~II longevity shock ($-20\%$ on mortality rates, i.e., policyholders live longer):
+The provision spread across models reaches \textbf{6.26 M\,EUR} (2.8\% of the largest provision), driven mainly by CBD, which projects higher old-age mortality; among full-grid models the spread is 1.22 M\,EUR. Either way, the differences are material at portfolio scale.
 
 \begin{table}[htbp]
 \centering
-\caption{Solvency~II longevity shock analysis.}
+\caption{Solvency II longevity shock ($-20\%$ on mortality rates).}
 \label{tab:scr}
 \small
-\begin{tabular}{l r r r}
+\begin{tabular}{l r r r r}
 \toprule
-Model & Base (M\,EUR) & Shocked (M\,EUR) & SCR\textsubscript{long.} (M\,EUR) \\
+Model & Base (M\,EUR) & Shocked (M\,EUR) & SCR (M\,EUR) & SCR (\%) \\
 \midrule
-Lee-Carter  & 220.05 & 231.57 & 11.52 \\
-Poisson LC  & 219.87 & 231.39 & 11.52 \\
-LC-ResNet   & 219.22 & 230.80 & 11.58 \\
-Random walk & 218.83 & 230.54 & 11.71 \\
-CBD         & 213.79 & 226.12 & 12.33 \\
-\midrule
-\textbf{SCR range} & & & \textbf{0.81} \\
+Lee--Carter  & 220.05 & 231.57 & 11.52 & 5.23 \\
+Poisson LC   & 219.87 & 231.39 & 11.52 & 5.24 \\
+LC-ResNet    & 219.22 & 230.80 & 11.58 & 5.28 \\
+Random walk  & 218.83 & 230.54 & 11.71 & 5.35 \\
+CBD          & 213.79 & 226.12 & 12.33 & 5.77 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The SCR\textsubscript{longevity} ranges from 11.52~M\,EUR (Lee-Carter) to 12.33~M\,EUR (CBD), a spread of 0.81~M\,EUR---approximately 7\% of the SCR itself. This demonstrates that model choice affects not only best-estimate provisions but also regulatory capital.
-
-The SCR as a percentage of the base provision is remarkably stable across models (5.23--5.77\%), suggesting that the shock multiplier is robust to model specification, even if the base levels differ.
+The longevity SCR ranges from 11.52 to 12.33 M\,EUR---a 7\% relative spread---while the SCR-to-provision ratio is stable (5.2--5.8\%). Model choice therefore shifts both the best estimate and the regulatory capital, but the shock multiplier itself is robust to specification.
 
 % ══════════════════════════════════════════════════════════════
 \section{Discussion}
 \label{sec:discussion}
 
-\paragraph{The random walk puzzle.} The strongest finding of this benchmark is the competitiveness of the age-specific random walk with drift. It outperforms all classical LC variants and most neural models at horizons 5--20. This aligns with \citet{booth2006demographic} and challenges the assumption that structural models necessarily outperform na\"ive baselines.
+\textbf{The random walk result.} The strongest single finding is that an age-specific random walk with drift beats every structural model on log-rate accuracy at every horizon. Structure helps not by improving raw accuracy but by improving \emph{actuarial} accuracy ($e_0$, $\ddot{a}_{65}$), where cross-age consistency matters---see the contrast between Tables~\ref{tab:rmse_logmx} and~\ref{tab:actuarial}.
 
-\paragraph{Neural networks: promise and peril.} Neural $\kappa_t$ replacements (LSTM, GRU) show genuine improvement at short horizons ($h \le 5$), where the recurrent architecture captures recent trend changes that the linear drift misses. However, they degrade at long horizons, and this degradation is amplified on actuarial metrics because $e_0$ and $\ddot{a}_{65}$ are non-linear functions of the entire mortality surface. The Transformer and CNN architectures perform worst, likely due to limited training data relative to model complexity.
+\textbf{When neural networks help, and how they fail.} Recurrent $\kappa_t$ models genuinely improve short-horizon log-rate accuracy, and they adapt quickly during the COVID shock. Their failure mode is systematic long-horizon bias that compounds through the life table: a 2-year $e_0$ error at $h{=}20$ is disqualifying for provisioning. Model complexity must be matched to the decision the forecast serves.
 
-\paragraph{LC-ResNet: bounded flexibility.} The hybrid model achieves a favorable trade-off: it captures short-term residual structure (ranking first for young ages) while reverting to stable LC extrapolation at long horizons via the shrinkage mechanism. The interpretable LC skeleton ($a_x$, $b_x$, $\kappa_t$) remains accessible for regulatory reporting.
+\textbf{Bounded flexibility works.} LC-ResNet's design principle---let a neural network correct the skeleton where evidence is dense (short horizons, young ages) and fade it out where extrapolation risk dominates---delivers the intended profile: best structural model at $h{=}1$ and for young ages, classical-level actuarial accuracy at $h{=}20$, and full interpretability of the skeleton.
 
-\paragraph{Limitations.}
-\begin{itemize}
-    \item All models are single-population; multi-population extensions (Li-Lee) are not considered.
-    \item Cohort effects are not explicitly modeled (Renshaw-Haberman), though the LC-ResNet residual network may implicitly capture some.
-    \item The neural models use a single seed (42) rather than ensemble averaging, which may underestimate their potential.
-    \item HMD data ends in 2023; post-COVID stabilization effects remain uncertain.
-\end{itemize}
+\textbf{Limitations.} All models are single-population; cohort effects are not explicitly modeled; neural results use a single seed rather than deep ensembles; prediction-interval calibration is not evaluated here; and post-2023 data will be needed to judge post-COVID trend re-establishment.
 
 % ══════════════════════════════════════════════════════════════
 \section{Conclusion}
 \label{sec:conclusion}
 
-This benchmark provides an empirical answer to the question ``when should actuaries trust neural networks for mortality forecasting?'': at short horizons with long historical data, when the added complexity is justified by practical gains. For most actuarial applications---long-horizon projections for provisioning and capital---the classical Lee-Carter family and even the simple random walk remain competitive or superior.
+When should actuaries trust neural networks for mortality forecasting? On this evidence: at short horizons, with long training histories, for log-rate objectives---and even then, preferably inside a constrained design such as LC-ResNet, where the neural component is bounded and fades with horizon. For long-horizon provisioning, the classical family (Lee--Miller in particular) remains the safer instrument, and the random walk with drift should always be run as the honesty check. The 6.3 M\,EUR provision spread on a modest portfolio shows that these choices are, ultimately, capital decisions.
 
-The LC-ResNet hybrid offers a practical middle ground: interpretable by construction, competitive at short horizons, and stable at long horizons. The decision framework proposed in Section~\ref{sec:decision} provides actionable guidance for practitioners.
+% ══════════════════════════════════════════════════════════════
+\section*{Code Availability}
+\addcontentsline{toc}{section}{Code Availability}
 
-The full codebase---15~models implemented from scratch, evaluation harness, and Streamlit dashboard---is available at \url{https://github.com/aminemanai2003/neural-mortality-benchmark}.
+The complete implementation---all 15 models from scratch, the evaluation harness, the pricing case study, tests, and an interactive dashboard---is openly available at:
+\begin{center}
+\url{https://github.com/aminemanai2003/neural-mortality-benchmark}
+\end{center}
+HMD data are not redistributable; the repository documents the download procedure. All results are reproducible with \texttt{python scripts/run\_benchmark.py} (fixed seeds).
 
 % ══════════════════════════════════════════════════════════════
 \bibliographystyle{apalike}
 \bibliography{references}
+
+% ══════════════════════════════════════════════════════════════
+\appendix
+
+\section{Model Configurations}
+\label{app:configs}
+
+\begin{table}[htbp]
+\centering
+\caption{Hyperparameters. All neural models: 200 epochs max, early stopping (patience 20), Adam, learning rate $10^{-3}$, weight decay $10^{-4}$, seed 42.}
+\label{tab:hyper}
+\small
+\begin{tabular}{l l}
+\toprule
+Model & Architecture \\
+\midrule
+LSTM / GRU / Bi-LSTM $\kappa_t$ & 2 layers, hidden 64, lookback 20 \\
+Transformer $\kappa_t$ & 2 encoder layers, $d_{\text{model}}{=}64$, 4 heads, lookback 20 \\
+FFNN embeddings & age emb.\ dim 8 $+$ continuous year; MLP 128--64--32, dropout 0.1 \\
+CNN surface & channels 16--32--64, kernel $3{\times}3$, adaptive pooling \\
+LC-ResNet & residual MLP 64--32, dropout 0.1, $\lambda = 0.1$ \\
+CBD & age range 60--100 \\
+Hyndman--Ullah & 6 functional components, penalized splines \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Mean training time per fit (seconds, single CPU).}
+\label{tab:times}
+\small
+\begin{tabular}{l r @{\hspace{2.5em}} l r}
+\toprule
+Model & Time (s) & Model & Time (s) \\
+\midrule
+Frozen rates   & 0.00 & Bi-LSTM $\kappa_t$     & 0.47 \\
+Random walk    & 0.00 & Transformer $\kappa_t$ & 0.55 \\
+CBD            & 0.00 & GRU $\kappa_t$         & 0.73 \\
+Hyndman--Ullah & 0.00 & LC-ResNet              & 1.45 \\
+Lee--Carter    & 0.01 & FFNN embeddings        & 3.27 \\
+BMS            & 0.03 & CNN surface            & 8.18 \\
+Poisson LC     & 0.05 & & \\
+Lee--Miller    & 0.09 & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Additional Results}
+\label{app:extra}
+
+\begin{table}[htbp]
+\centering
+\caption{Short-history scenario: RMSE on $\ln m_{x,t}$ with training truncated to the last 20 or 50 years (averaged over countries and horizons $h \in \{5, 10\}$). Best full-grid model in bold.}
+\label{tab:shorthist}
+\small
+\begin{tabular}{l RR}
+\toprule
+Model & 20 yr & 50 yr \\
+\midrule
+CBD (60+ only)     & 0.128 & 0.122 \\
+Frozen rates       & \textbf{0.134} & \textbf{0.134} \\
+LC-ResNet          & 0.159 & 0.151 \\
+Poisson LC         & 0.163 & 0.189 \\
+Lee--Miller        & 0.164 & 0.163 \\
+Lee--Carter / BMS  & 0.165 & 0.163 \\
+LSTM $\kappa_t$    & 0.165 & 0.157 \\
+Bi-LSTM $\kappa_t$ & 0.165 & 0.147 \\
+GRU $\kappa_t$     & 0.165 & 0.156 \\
+Transformer $\kappa_t$ & 0.165 & 0.164 \\
+Random walk        & 0.173 & 0.149 \\
+CNN surface        & 0.178 & 0.220 \\
+FFNN embeddings    & 0.290 & 0.255 \\
+Hyndman--Ullah     & 0.340 & 0.333 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Age-group evaluation: RMSE on $\ln m_{x,t}$ for young (0--19) and elderly (65--100) ages, averaged over countries, origins, and horizons. Best per column in bold.}
+\label{tab:agegroups}
+\small
+\begin{tabular}{l RR}
+\toprule
+Model & Young 0--19 & Elderly 65--100 \\
+\midrule
+LC-ResNet          & \textbf{0.228} & 0.070 \\
+Bi-LSTM $\kappa_t$ & \textbf{0.228} & 0.071 \\
+LSTM $\kappa_t$    & 0.229 & 0.074 \\
+GRU $\kappa_t$     & 0.230 & 0.074 \\
+Lee--Carter / BMS  & 0.233 & 0.079 \\
+Lee--Miller        & 0.236 & 0.080 \\
+Frozen rates       & 0.241 & \textbf{0.054} \\
+Transformer $\kappa_t$ & 0.246 & 0.078 \\
+FFNN embeddings    & 0.252 & 0.117 \\
+Random walk        & 0.263 & 0.068 \\
+Hyndman--Ullah     & 0.346 & 0.068 \\
+Poisson LC         & 0.314 & 0.073 \\
+CNN surface        & 0.332 & 0.125 \\
+CBD (60+ only)     & --    & 0.102 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \end{document}

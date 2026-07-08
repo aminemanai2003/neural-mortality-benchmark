@@ -1,6 +1,7 @@
 """Streamlit dashboard for the mortality benchmark."""
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -11,15 +12,17 @@ import streamlit as st
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
-import os
 os.chdir(PROJECT_ROOT)
 
-from mortality.actuarial.case_study import longevity_risk_analysis, price_annuity_portfolio
-from mortality.actuarial.life_table import life_expectancy_at
-from mortality.data.loader import load_country
-from mortality.evaluation.decision_framework import recommend_model
-from mortality.models.classical import CLASSICAL_MODELS
-from mortality.models.hybrid import HYBRID_MODELS
+from mortality.actuarial.case_study import (  # noqa: E402
+    longevity_risk_analysis,
+    price_annuity_portfolio,
+)
+from mortality.actuarial.life_table import life_expectancy_at  # noqa: E402
+from mortality.data.loader import load_country  # noqa: E402
+from mortality.evaluation.decision_framework import recommend_model  # noqa: E402
+from mortality.models.classical import CLASSICAL_MODELS  # noqa: E402
+from mortality.models.hybrid import HYBRID_MODELS  # noqa: E402
 
 st.set_page_config(
     page_title="Neural Mortality Benchmark",

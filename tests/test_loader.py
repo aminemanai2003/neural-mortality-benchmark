@@ -34,3 +34,14 @@ class TestLoader:
         assert "exposures" in data
         assert data["exposures"].shape == (101, 74)
         assert np.all(data["exposures"] > 0)
+
+    def test_missing_trailing_years_trimmed(self):
+        """A country without data for the requested end year (e.g. GBRTENW in
+        2023) must have that year dropped, not floored to m_x = 1e-6."""
+        data = load_country("GBRTENW")
+        # No column may consist entirely of the 1e-6 floor.
+        floored_cols = np.all(data["mx"] <= 1e-6, axis=0)
+        assert not floored_cols.any()
+        assert data["years"][-1] < 2023
+        assert data["log_mx"].shape[1] == len(data["years"])
+        assert data["exposures"].shape[1] == len(data["years"])
