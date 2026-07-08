@@ -33,8 +33,13 @@ class CairnsBlakeDowd(MortalityModel):
         exposures: np.ndarray | None = None,
         deaths: np.ndarray | None = None,
     ) -> None:
-        # Select age range
         mask = (ages >= self.age_range[0]) & (ages <= self.age_range[1])
+        if not np.any(mask):
+            self._ages = np.array([], dtype=ages.dtype)
+            self.forecast_ages = self._ages
+            self._empty = True
+            return
+        self._empty = False
         self._ages = ages[mask]
         self.forecast_ages = self._ages
         mx_sub = np.exp(log_mx[mask, :])
@@ -64,6 +69,8 @@ class CairnsBlakeDowd(MortalityModel):
         self.cov_dkt = np.cov(dkt.T) if len(dkt) > 1 else np.eye(2) * 0.01
 
     def forecast(self, h: int) -> np.ndarray:
+        if getattr(self, "_empty", False):
+            return np.empty((0, h))
         x_centered = self._ages - self.x_bar
         kt1_fc = self.kt1[-1] + self.drift1 * np.arange(1, h + 1)
         kt2_fc = self.kt2[-1] + self.drift2 * np.arange(1, h + 1)
@@ -74,6 +81,8 @@ class CairnsBlakeDowd(MortalityModel):
         return np.log(mx)
 
     def simulate(self, h: int, n_paths: int = 1000, seed: int = 42) -> np.ndarray:
+        if getattr(self, "_empty", False):
+            return np.empty((n_paths, 0, h))
         rng = np.random.default_rng(seed)
         x_centered = self._ages - self.x_bar
         drift = np.array([self.drift1, self.drift2])

@@ -9,7 +9,10 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT / "src"))
+import os
+os.chdir(PROJECT_ROOT)
 
 from mortality.actuarial.case_study import longevity_risk_analysis, price_annuity_portfolio
 from mortality.actuarial.life_table import life_expectancy_at

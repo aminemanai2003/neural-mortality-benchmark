@@ -83,10 +83,13 @@ class CNNSurface(MortalityModel):
         self._log_mx_std = log_mx.std()
         norm = (log_mx - self._log_mx_mean) / self._log_mx_std
 
+        effective_lb = min(self.lookback, n_years - 1)
+        self._effective_lookback = effective_lb
+
         X, y = [], []
-        for t in range(n_years - self.lookback):
-            X.append(norm[:, t : t + self.lookback])
-            y.append(norm[:, t + self.lookback])
+        for t in range(n_years - effective_lb):
+            X.append(norm[:, t : t + effective_lb])
+            y.append(norm[:, t + effective_lb])
 
         X = np.array(X)[:, None, :, :]  # (N, 1, n_ages, lookback)
         y = np.array(y)
@@ -99,7 +102,7 @@ class CNNSurface(MortalityModel):
         X_val, y_val = X_t[split:], y_t[split:]
 
         torch.manual_seed(self.seed)
-        self.net = _CNNNet(n_ages, self.lookback, self.channels, self.kernel_size)
+        self.net = _CNNNet(n_ages, effective_lb, self.channels, self.kernel_size)
         optimizer = torch.optim.Adam(self.net.parameters(), lr=self.lr, weight_decay=1e-4)
 
         best_val = float("inf")
@@ -133,7 +136,7 @@ class CNNSurface(MortalityModel):
         if best_state:
             self.net.load_state_dict(best_state)
         self.net.eval()
-        self._last_window = norm[:, -self.lookback:]
+        self._last_window = norm[:, -effective_lb:]
 
     def forecast(self, h: int) -> np.ndarray:
         window = self._last_window.copy()

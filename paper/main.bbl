@@ -1,0 +1,69 @@
+\begin{thebibliography}{}
+
+\bibitem[Booth, 2006]{booth2006demographic}
+Booth, H. (2006).
+\newblock Demographic forecasting: 1980 to 2005 in review.
+\newblock {\em International Journal of Forecasting}, 22(3):547--581.
+
+\bibitem[Booth et~al., 2002]{booth2002applying}
+Booth, H., Maindonald, J., and Smith, L. (2002).
+\newblock Applying {Lee-Carter} under conditions of variable mortality decline.
+\newblock {\em Population Studies}, 56(3):325--336.
+
+\bibitem[Brouhns et~al., 2002]{brouhns2002poisson}
+Brouhns, N., Denuit, M., and Vermunt, J.~K. (2002).
+\newblock A {Poisson} log-bilinear regression approach to the construction of
+  projected lifetables.
+\newblock {\em Insurance: Mathematics and Economics}, 31(3):373--393.
+
+\bibitem[Cairns et~al., 2006]{cairns2006two}
+Cairns, A. J.~G., Blake, D., and Dowd, K. (2006).
+\newblock A two-factor model for stochastic mortality with parameter
+  uncertainty: Theory and calibration.
+\newblock {\em Journal of Risk and Insurance}, 73(4):687--718.
+
+\bibitem[Diebold and Mariano, 1995]{diebold1995comparing}
+Diebold, F.~X. and Mariano, R.~S. (1995).
+\newblock Comparing predictive accuracy.
+\newblock {\em Journal of Business \& Economic Statistics}, 13(3):253--263.
+
+\bibitem[Harvey et~al., 1997]{harvey1997testing}
+Harvey, D., Leybourne, S., and Newbold, P. (1997).
+\newblock Testing the equality of prediction mean squared errors.
+\newblock {\em International Journal of Forecasting}, 13(2):281--291.
+
+\bibitem[Hyndman and Ullah, 2007]{hyndman2007robust}
+Hyndman, R.~J. and Ullah, M.~S. (2007).
+\newblock Robust forecasting of mortality and fertility rates: A functional
+  data approach.
+\newblock {\em Computational Statistics \& Data Analysis}, 51(10):4942--4956.
+
+\bibitem[Lee and Carter, 1992]{lee1992modeling}
+Lee, R.~D. and Carter, L.~R. (1992).
+\newblock Modeling and forecasting {U.S.} mortality.
+\newblock {\em Journal of the American Statistical Association},
+  87(419):659--671.
+
+\bibitem[Lee and Miller, 2001]{lee2001evaluating}
+Lee, R.~D. and Miller, T. (2001).
+\newblock Evaluating the performance of the {Lee-Carter} method for forecasting
+  mortality.
+\newblock {\em Demography}, 38(4):537--549.
+
+\bibitem[Nigri et~al., 2019]{nigri2019deep}
+Nigri, A., Levantesi, S., Marino, M., Scognamiglio, S., and Perla, F. (2019).
+\newblock A deep learning integrated {Lee-Carter} model.
+\newblock {\em Risks}, 7(1):33.
+
+\bibitem[Perla et~al., 2021]{perla2021brief}
+Perla, F., Richman, R., Scognamiglio, S., and W{\"u}thrich, M.~V. (2021).
+\newblock Time-series forecasting of mortality rates using deep learning.
+\newblock {\em Scandinavian Actuarial Journal}, 2021(7):572--598.
+
+\bibitem[Richman and W{\"u}thrich, 2021]{richman2019neural}
+Richman, R. and W{\"u}thrich, M.~V. (2021).
+\newblock A neural network extension of the {Lee-Carter} model to multiple
+  populations.
+\newblock {\em Annals of Actuarial Science}, 15(2):346--366.
+
+\end{thebibliography}

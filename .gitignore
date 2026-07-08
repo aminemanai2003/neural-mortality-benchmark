@@ -17,3 +17,18 @@ Thumbs.db
 .env
 *.secret
 .ipynb_checkpoints/
+
+# LaTeX build artifacts
+paper/*.aux
+paper/*.log
+paper/*.out
+paper/*.toc
+paper/*.blg
+paper/*.synctex.gz
+paper/arxiv-submission/
+
+# Word lock files
+report/~$*
+
+# Local tooling
+.claude/
