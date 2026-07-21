@@ -1,6 +1,6 @@
 """Actuarial case study: annuity pricing and Solvency II longevity shock.
 
-Prices a whole-life annuity-due for a portfolio of 1,000 French pensioners
+Prices an annuity-due through age 100 for a portfolio of 1,000 French pensioners
 aged 65, comparing provisions across all models. Then applies a Solvency II
 type longevity shock (-20% to mortality rates) to quantify model risk.
 """

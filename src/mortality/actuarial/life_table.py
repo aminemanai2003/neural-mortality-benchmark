@@ -45,7 +45,7 @@ def life_expectancy_at(mx: np.ndarray, age: int = 0) -> float:
 
 
 def annuity_due(mx: np.ndarray, start_age: int = 65, interest_rate: float = 0.02) -> float:
-    """Whole-life annuity-due ä_x at a given interest rate."""
+    """Annuity-due from ``start_age`` through the final age in ``mx``."""
     lt = life_table(mx)
     lx = lt["lx"]
     v = 1.0 / (1.0 + interest_rate)
