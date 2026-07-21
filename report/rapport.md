@@ -1,175 +1,157 @@
-# Quand faut-il faire confiance aux réseaux de neurones ? Benchmark complet des modèles Lee-Carter classiques et neuronaux pour la prévision de mortalité
+# Benchmark de modèles de mortalité classiques et neuronaux
 
-**Amine Manai** — Juillet 2026
+## Résumé exécutif
 
----
+Ce projet compare 14 implémentations de prévision de mortalité sur huit populations de la Human Mortality Database (HMD) : cinq modèles statistiques structurés, deux baselines simples, six architectures neuronales et un modèle hybride proposé, LC-ResNet. Les données couvrent les âges 0 à 100 et, selon le pays, les années 1950 à 2023.
 
-## Résumé
+Le protocole utilise une validation rolling-origin aux horizons 1, 5, 10 et 20 ans. Un résultat à l’horizon `h` mesure l’erreur sur toute la trajectoire allant de l’année 1 à l’année `h`, et non uniquement sur l’année terminale. Les critères sont l’erreur sur `log(mx)`, l’espérance de vie à la naissance et la valeur d’une rente à 65 ans. Les deux critères actuariels sont tronqués à l’âge 100.
 
-Ce projet propose un benchmark rigoureux comparant 14 modèles de prévision de mortalité — 8 classiques (Lee-Carter, Lee-Miller, Booth-Maindonald-Smith, Poisson Lee-Carter, CBD, Hyndman-Ullah, et deux baselines naïves) et 6 neuronaux (LSTM, GRU, Bi-LSTM, Transformer sur l'indice kt ; réseau feed-forward à embeddings ; CNN sur la surface de mortalité) — sur 8 pays de la Human Mortality Database (1950–2023).
+Les principaux résultats sont les suivants :
 
-L'originalité du travail réside dans trois contributions :
+- la marche aléatoire avec dérive par âge obtient la meilleure précision sur `log(mx)` à tous les horizons ;
+- LC-ResNet est le meilleur modèle structuré à un an, mais Lee-Miller le dépasse à 20 ans ;
+- le modèle fonctionnel H-U obtient la plus faible erreur sur l’espérance de vie à 20 ans ;
+- le FFNN obtient la plus faible erreur sur la valeur de rente à 20 ans ;
+- les taux gelés sont les plus robustes dans le test COVID cumulé 2020–2022 et avec seulement 20 ans d’historique ;
+- dans l’étude de cas française, l’écart de provision entre cinq modèles atteint 6,26 M€, dont 1,22 M€ entre les quatre modèles couvrant tous les âges.
 
-1. **Un cadre décisionnel pratique** : un arbre de décision « quel modèle utiliser quand » basé sur la longueur de l'historique, l'horizon de prévision, le segment d'âge visé et le besoin d'interprétabilité.
-2. **Un modèle hybride original (LC-ResNet)** : un Lee-Carter Poisson comme squelette interprétable, augmenté d'un petit réseau de neurones qui corrige les résidus structurés (non-linéarités, effets cohorte), avec un shrinkage à l'horizon qui fait tendre la correction vers zéro aux horizons longs.
-3. **Une étude de cas actuarielle chiffrée en euros** : pricing d'une rente viagère ä65 pour un portefeuille de 1 000 rentiers, quantification du risque de modèle en euros, et choc de longévité type Solvabilité II.
+Ces résultats sont propres au jeu de données, au protocole et aux fonctions de perte retenues. Ils ne constituent pas un classement universel des modèles.
 
-L'évaluation utilise la validation rolling-origin (origines 1990–2018, horizons 1–20 ans), des métriques actuarielles (erreur sur e0 et sur la valeur d'annuité ä65), des tests de Diebold-Mariano, et des scénarios ciblés (données courtes, choc COVID, groupes d'âges).
+## 1. Contexte actuariel
 
----
+Le risque de longévité correspond au risque que les assurés vivent plus longtemps que prévu. Il affecte directement les provisions de rentes et le capital de solvabilité. Dans la formule standard de Solvabilité II, le choc de longévité est une baisse instantanée et permanente de 20 % des taux de mortalité.
 
-## 1. Introduction
+La difficulté pratique n’est donc pas seulement de prévoir correctement les taux de décès. Il faut aussi vérifier que les erreurs résiduelles n’entraînent pas un biais matériel sur les quantités utilisées en actuariat : espérance de vie, valeur de rente et besoin en capital.
 
-### 1.1 Le risque de longévité
+## 2. Données
 
-Le risque de longévité — le risque que les assurés vivent plus longtemps que prévu — est l'un des principaux risques auxquels font face les compagnies d'assurance vie, les fonds de pension et les réassureurs. Sous Solvabilité II, le capital requis pour le risque de longévité (SCR longevity) représente typiquement 5 à 15 % du best estimate des provisions pour rentes.
+Le benchmark utilise les taux centraux de mortalité `mx`, les expositions et les décès de la HMD pour la France, l’Angleterre et le Pays de Galles, les États-Unis, le Japon, l’Italie, l’Espagne, la Suède et les Pays-Bas. La population totale est utilisée. Les taux nuls ou manquants sont remplacés par un plancher de `10^-6` avant le passage au logarithme. Les années terminales absentes ne sont pas imputées.
 
-La qualité de la prévision de mortalité a un impact direct et quantifiable sur :
-- Le provisionnement (best estimate)
-- Le capital de solvabilité requis (SCR)
-- La tarification des rentes viagères
-- Les transferts de risque (ILS, swaps de longévité)
+La HMD autorise l’utilisation de ses données après inscription, mais leur redistribution n’est pas permise. Le dépôt contient donc le code de téléchargement et de traitement, mais pas les fichiers HMD bruts.
 
-### 1.2 Objectif du projet
+## 3. Modèles comparés
 
-Les modèles Lee-Carter et leurs variantes dominent la pratique actuarielle depuis 30 ans. Parallèlement, les réseaux de neurones ont montré des résultats prometteurs dans la littérature récente. Mais **aucune étude ne fournit un guide pratique permettant à un actuaire de choisir le bon modèle pour son contexte spécifique**.
+### 3.1 Modèles structurés et baselines
 
-Ce projet comble ce manque en répondant à des questions concrètes :
-- Quel modèle fonctionne le mieux avec un historique court (20 ans) ?
-- Lequel est le plus robuste aux chocs de mortalité (COVID) ?
-- Lequel est le plus performant à horizon 5, 10, 20 ans ?
-- Lequel est le meilleur pour les âges élevés (65+) — le segment rentes/longévité ?
-- Quand la complexité des réseaux de neurones est-elle justifiée ?
+1. Lee-Carter par SVD, avec marche aléatoire avec dérive sur l’indice temporel.
+2. Lee-Miller, avec ajustement de l’indice sur l’espérance de vie observée.
+3. Lee-Carter Poisson, estimé à partir des décès et des expositions.
+4. CBD, modèle à deux facteurs limité aux âges 60–100.
+5. Modèle fonctionnel de style Hyndman-Ullah : lissage par splines, six composantes fonctionnelles et marches aléatoires avec dérive sur les scores. Il s’agit d’une version simplifiée de la procédure H-U complète.
+6. Marche aléatoire avec dérive, séparément pour chaque âge.
+7. Taux gelés au dernier niveau observé.
 
----
+### 3.2 Modèles neuronaux
 
-## 2. Revue de littérature
+Les six modèles PyTorch utilisent un budget commun : 200 époques au maximum, early stopping de patience 20, Adam, taux d’apprentissage `10^-3`, pénalisation `10^-4` et seed 42.
 
-### 2.1 Modèles classiques
+- LSTM, GRU, Bi-LSTM et Transformer prédisent l’indice temporel de Lee-Carter à partir de 20 années d’historique.
+- Le FFNN combine un embedding d’âge et une variable temporelle continue.
+- Le CNN traite la surface âge–année comme une image et produit les profils futurs de manière récursive.
 
-- **Lee-Carter (1992)** : le modèle fondateur. Décomposition SVD de la matrice de log-mortalité, avec un indice kt suivant une marche aléatoire avec dérive.
-- **Lee-Miller (2001)** : ajustement de kt sur l'espérance de vie observée.
-- **Booth-Maindonald-Smith (2002)** : sélection de la période de fit par test de linéarité de kt.
-- **Brouhns et al. (2002)** : estimation par maximum de vraisemblance sous hypothèse de Poisson.
-- **Cairns-Blake-Dowd (2006)** : modèle à deux facteurs pour les âges élevés, utilisé par les régulateurs.
-- **Hyndman-Ullah (2007)** : analyse en données fonctionnelles avec lissage par splines et ACP multi-composantes.
+### 3.3 LC-ResNet
 
-### 2.2 Approches neuronales
+LC-ResNet ajuste d’abord un Lee-Carter Poisson, puis apprend les résidus avec un MLP 64–32 à partir de l’âge, de l’année, de `bx` et de `kt` normalisés. La correction neuronale est multipliée par `exp(-0,1 h)`. Son poids vaut environ 0,90 à un an et 0,14 à 20 ans.
 
-- **Richman & Wüthrich (2019)** : réseau feed-forward avec embeddings pour âge, année, pays, sexe — la référence actuariat-ML.
-- **Nigri et al. (2019)** : LSTM appliqué à l'indice kt de Lee-Carter.
-- **Perla et al. (2021)** : revue systématique des méthodes de deep learning pour la mortalité (Cambridge Annals of Actuarial Science).
+Le squelette Lee-Carter reste transparent, mais la correction neuronale demeure opaque. Le modèle est donc partiellement interprétable, pas totalement interprétable.
 
-### 2.3 Positionnement
+## 4. Protocole d’évaluation
 
-Notre contribution se distingue par (1) l'ampleur du benchmark (14 modèles, 8 pays, rolling-origin), (2) le cadre décisionnel pratique, et (3) le modèle hybride LC-ResNet qui combine interprétabilité et flexibilité.
+Pour chaque origine 1990, 1992, …, 2018, le modèle est réajusté sur les observations disponibles puis évalué aux horizons 1, 5, 10 et 20 ans lorsque la vérité est disponible. Les résultats agrégés sont des moyennes non pondérées des RMSE par couple pays–origine valide.
 
----
+Les scénarios complémentaires sont :
 
-## 3. Données
+- historique court : une origine par pays, 10 années laissées pour l’évaluation, fenêtres d’apprentissage de 20, 30 et 50 ans ;
+- choc COVID : entraînement jusqu’en 2019, puis erreurs cumulées sur 2020, 2020–2021 et 2020–2022 ;
+- groupes d’âges : réajustement séparé de chaque modèle sur 0–19, 20–64 et 65–100 ans.
 
-**Source** : Human Mortality Database (mortality.org), données non redistribuables.
+Le benchmark enregistré contient 27 312 lignes pour 14 implémentations. Il mesure la précision ponctuelle ; il ne produit ni test de Diebold-Mariano publié, ni couverture d’intervalles prédictifs.
 
-**Pays** : France, Angleterre & Galles, États-Unis, Japon, Italie, Espagne, Suède, Pays-Bas.
+## 5. Résultats
 
-**Période** : 1950–2023 (inclut le choc COVID 2020–2023).
+### 5.1 RMSE sur log(mx)
 
-**Âges** : 0–100+, par sexe.
+| Modèle | h=1 | h=5 | h=10 | h=20 |
+|---|---:|---:|---:|---:|
+| Marche aléatoire | 0,100 | 0,124 | 0,146 | 0,203 |
+| Taux gelés | 0,100 | 0,133 | 0,186 | 0,314 |
+| LC-ResNet | 0,120 | 0,152 | 0,184 | 0,247 |
+| Lee-Miller | 0,145 | 0,166 | 0,187 | 0,232 |
+| Lee-Carter | 0,156 | 0,177 | 0,199 | 0,248 |
+| LSTM sur kt | 0,131 | 0,152 | 0,180 | 0,263 |
+| Transformer sur kt | 0,141 | 0,177 | 0,225 | 0,327 |
+| CNN surface | 0,147 | 0,191 | 0,240 | 0,448 |
 
-**Prétraitement** : plancher des taux nuls à 10⁻⁶, pas de lissage des grands âges au-delà de 100.
+CBD obtient des valeurs plus faibles sur les seuls âges 60–100, mais celles-ci ne sont pas comparables aux résultats sur la grille complète.
 
----
+### 5.2 Critères actuariels
 
-## 4. Modèles
+| Objectif | Meilleur modèle à 5 ans | Meilleur modèle à 20 ans |
+|---|---|---|
+| Espérance de vie e0 | Marche aléatoire, 0,315 an | H-U, 0,694 an |
+| Rente à 65 ans | Marche aléatoire, 0,159 | FFNN, 0,381 |
 
-### 4.1 Modèles classiques (implémentés from scratch en Python)
+Les modèles récurrents peuvent améliorer `log(mx)` à court horizon tout en détériorant fortement les critères actuariels à 20 ans. Par exemple, l’erreur de l’espérance de vie du LSTM atteint 2,059 ans à 20 ans, contre 0,742 pour Lee-Miller.
 
-*[Détail de chaque modèle avec les équations — ax + bx*kt, contraintes d'identifiabilité, estimation, prévision]*
+### 5.3 Scénarios
 
-### 4.2 Modèles neuronaux (PyTorch)
-
-*[Architecture de chaque réseau, stratégie d'entraînement commune : early stopping, même budget d'hyperparamètres, deep ensembles pour l'incertitude]*
-
-### 4.3 Modèle hybride LC-ResNet (contribution)
-
-Le modèle combine :
-- Un **squelette Lee-Carter Poisson** (ax, bx, kt) — interprétable, stable à long terme
-- Un **réseau résiduel** qui apprend les résidus structurés du LC
-- Un **shrinkage à l'horizon** : la correction est multipliée par exp(-λh), garantissant la convergence vers le LC pur aux horizons longs
-
----
-
-## 5. Protocole d'évaluation
-
-### 5.1 Validation rolling-origin
-Origines de 1990 à 2018 (pas de 2), horizons de 1 à 20 ans, ré-entraînement complet à chaque origine.
-
-### 5.2 Métriques
-- **Statistiques** : RMSE et MAE sur log m(x,t)
-- **Actuarielles** : RMSE sur e0 et sur la valeur d'annuité ä65
-
-### 5.3 Tests statistiques
-Tests de Diebold-Mariano par paires de modèles.
-
-### 5.4 Scénarios
-- Données courtes (20/30/50 ans d'historique)
-- Choc de mortalité (entraînement avant 2020, évaluation 2020–2023)
-- Groupes d'âges (0–19, 20–64, 65+)
-
----
-
-## 6. Résultats
-
-*[Tableaux et figures générés par le benchmark — à remplir après exécution complète]*
-
----
-
-## 7. Cadre décisionnel
-
-*[Arbre de décision et scorecard — à remplir après exécution complète]*
-
----
-
-## 8. Étude de cas actuarielle
-
-### 8.1 Pricing de rente viagère
-
-Portefeuille fictif de 1 000 rentiers français, âge 65, rente annuelle de 12 000 EUR, taux d'actualisation 2 %.
-
-*[Tableau comparatif des provisions par modèle]*
-
-### 8.2 Choc de longévité Solvabilité II
-
-Application d'un choc de -20 % sur les taux de mortalité (les assurés vivent plus longtemps). Quantification du SCR longévité et du risque de modèle.
-
-*[Tableau SCR par modèle]*
-
----
-
-## 9. Limites et perspectives
-
-- Pas de modèle multi-population joint (Li-Lee, etc.)
-- Pas de modélisation explicite des effets cohorte (Renshaw-Haberman)
-- Données HMD limitées à 2023 — les effets post-COVID ne sont pas encore stabilisés
-- Le modèle hybride LC-ResNet pourrait bénéficier d'une architecture multi-tâches
-
----
-
-## 10. Conclusion
-
-Ce benchmark montre que [conclusions à remplir après exécution complète]. Le cadre décisionnel proposé permet aux actuaires de choisir le modèle le plus adapté à leur contexte, en fonction de la longueur de l'historique, de l'horizon de prévision, du segment d'âge et du besoin d'interprétabilité.
-
-Le modèle hybride LC-ResNet offre un compromis prometteur entre la stabilité du Lee-Carter et la flexibilité des réseaux de neurones, particulièrement aux horizons courts et moyens.
-
----
-
-## Bibliographie
-
-1. Lee, R.D. & Carter, L.R. (1992). Modeling and forecasting U.S. mortality. *JASA*, 87(419), 659–671.
-2. Lee, R.D. & Miller, T. (2001). Evaluating the performance of the Lee-Carter method. *Demography*, 38(4), 537–549.
-3. Booth, H., Maindonald, J. & Smith, L. (2002). Applying Lee-Carter under conditions of variable mortality decline. *Population Studies*, 56(3), 325–336.
-4. Brouhns, N., Denuit, M. & Vermunt, J.K. (2002). A Poisson log-bilinear regression approach to the construction of projected lifetables. *Insurance: Mathematics and Economics*, 31(3), 373–393.
-5. Cairns, A.J., Blake, D. & Dowd, K. (2006). A two-factor model for stochastic mortality. *North American Actuarial Journal*, 10(2), 1–22.
-6. Hyndman, R.J. & Ullah, M.S. (2007). Robust forecasting of mortality and fertility rates. *Computational Statistics & Data Analysis*, 51(10), 4942–4956.
-7. Richman, R. & Wüthrich, M.V. (2019). A neural network extension of the Lee-Carter model to multiple populations. *Annals of Actuarial Science*, 15(2), 346–366.
-8. Perla, F., Richman, R., Scognamiglio, S. & Wüthrich, M.V. (2021). A brief review of deep learning methods in mortality forecasting. *Annals of Actuarial Science*, 18(1), 72–95.
+- COVID : les taux gelés obtiennent les meilleurs résultats sur les trois trajectoires cumulées complètes ; plusieurs modèles neuronaux sur `kt` restent proches.
+- Historique de 20 ans : les taux gelés sont premiers avec 0,134 ; LC-ResNet est le meilleur modèle structuré avec 0,159.
+- Jeunes âges : LC-ResNet et Bi-LSTM sont à égalité après arrondi, avec 0,228.
+- Âges 65–100 : taux gelés 0,054 ; H-U et marche aléatoire 0,068 ; CBD 0,102.
+
+## 6. Guide de décision
+
+Le choix doit être lié à l’objectif :
+
+- `log(mx)` sur la grille complète : toujours inclure la marche aléatoire comme baseline forte ;
+- historique très court : tester d’abord les taux gelés ; utiliser LC-ResNet si un modèle structuré est exigé ;
+- espérance de vie à 20 ans : H-U arrive premier dans ce benchmark, Lee-Miller étant l’option la plus forte de la famille LC ;
+- valeur de rente à 20 ans : le FFNN arrive premier, mais il doit être accompagné de sensibilités classiques ;
+- transparence : préférer une famille LC ; LC-ResNet conserve un squelette explicable mais pas une correction explicable ;
+- choc : conserver plusieurs modèles, car une seule période COVID ne suffit pas à sélectionner un modèle universellement robuste.
+
+## 7. Étude de cas française
+
+Les modèles sont ajustés sur la France jusqu’en 2023 et leur projection 2033 est utilisée pour un portefeuille fictif de 1 000 rentiers âgés de 65 ans, rente annuelle 12 000 €, taux d’actualisation 2 %, paiements jusqu’à 100 ans.
+
+| Modèle | Provision de base | Provision choquée | SCR longévité |
+|---|---:|---:|---:|
+| Lee-Carter | 220,05 M€ | 231,57 M€ | 11,52 M€ |
+| Lee-Carter Poisson | 219,87 M€ | 231,39 M€ | 11,52 M€ |
+| LC-ResNet | 219,22 M€ | 230,80 M€ | 11,58 M€ |
+| Marche aléatoire | 218,83 M€ | 230,54 M€ | 11,71 M€ |
+| CBD | 213,79 M€ | 226,12 M€ | 12,33 M€ |
+
+L’écart de provision atteint 6,26 M€ en incluant CBD et 1,22 M€ entre modèles couvrant tous les âges. Le SCR varie de 11,52 à 12,33 M€, soit environ 7 % d’écart relatif. Cette étude est illustrative et ne remplace pas une valorisation propre à un assureur.
+
+## 8. Limites
+
+- modèles mono-population et absence d’effet cohorte explicite ;
+- une seule seed et pas de tuning spécifique à chaque architecture ;
+- prévisions ponctuelles seulement, sans calibration d’intervalles ;
+- critères actuariels tronqués à 100 ans ;
+- nombres d’origines valides différents selon la date de fin de chaque pays ;
+- scénario COVID limité à un seul épisode ;
+- étude de cas sensible à l’inclusion de CBD, qui ne couvre que les âges élevés.
+
+## 9. Reproductibilité
+
+```bash
+pip install -e ".[dev]"
+python scripts/run_benchmark.py
+python scripts/run_case_study.py
+pytest -q
+```
+
+Le dépôt contient le manuscrit LaTeX, 27 312 lignes de résultats, le CSV de l’étude de cas, les tests et le dashboard Streamlit. OpenAI Codex a été utilisé pour l’édition linguistique, les vérifications de cohérence entre code et manuscrit et l’assurance qualité des documents ; l’auteur reste responsable de l’étude et de son contenu.
+
+## 10. Références principales
+
+- Lee, R. D. et Carter, L. R. (1992). Modeling and Forecasting U.S. Mortality. JASA.
+- Brouhns, N., Denuit, M. et Vermunt, J. K. (2002). Poisson log-bilinear mortality projection. IME.
+- Cairns, A. J. G., Blake, D. et Dowd, K. (2006). A two-factor model for stochastic mortality. Journal of Risk and Insurance.
+- Hyndman, R. J. et Ullah, M. S. (2007). Robust forecasting of mortality and fertility rates. CSDA.
+- Barigou, K. et al. (2023). Bayesian model averaging for mortality forecasting. IJF.
+- Li, L., Li, H. et Panagiotelis, A. (2025). Boosting domain-specific models with shrinkage. IJF.
+- De Mori, L. et al. (2025). Mortality forecasting via multi-task neural networks. ASTIN Bulletin.

@@ -10,13 +10,11 @@ CRITERIA = [
     "mortality_shock",
     "interpretability",
     "training_speed",
-    "interval_calibration",
 ]
 
 INTERPRETABILITY_SCORES = {
     "lee_carter": 5,
     "lee_miller": 5,
-    "bms": 5,
     "poisson_lc": 5,
     "cbd": 5,
     "hyndman_ullah": 4,
@@ -47,12 +45,16 @@ def build_scorecard(
         model_df = benchmark_df[benchmark_df["model_name"] == model]
 
         # Short history: how well does the model perform with limited data
-        short_metrics = model_df[model_df["metric"].str.contains("hist20|hist30", na=False)]
+        short_metrics = model_df[
+            model_df["metric"].isin(["rmse_log_mx_hist20", "rmse_log_mx_hist30"])
+        ]
         if len(short_metrics) > 0:
             peer_means = [
                 benchmark_df[
                     (benchmark_df["model_name"] == m)
-                    & (benchmark_df["metric"].str.contains("hist20|hist30", na=False))
+                    & benchmark_df["metric"].isin(
+                        ["rmse_log_mx_hist20", "rmse_log_mx_hist30"]
+                    )
                 ]["value"].mean()
                 for m in models
             ]
@@ -91,11 +93,20 @@ def build_scorecard(
         else:
             scores[model]["elderly_ages"] = 3
 
-        # Mortality shock robustness
-        e0_metric = model_df[model_df["metric"] == "rmse_e0"]
+        # COVID shock robustness: origin 2019 is produced only by the shock scenario.
+        shock_metric = model_df[
+            (model_df["origin"] == 2019) & (model_df["metric"] == "rmse_log_mx")
+        ]
         scores[model]["mortality_shock"] = _relative_score(
-            e0_metric["value"].mean() if len(e0_metric) > 0 else 999,
-            [_get_mean(benchmark_df, m, "rmse_e0") for m in models],
+            shock_metric["value"].mean() if len(shock_metric) > 0 else 999,
+            [
+                benchmark_df[
+                    (benchmark_df["model_name"] == m)
+                    & (benchmark_df["origin"] == 2019)
+                    & (benchmark_df["metric"] == "rmse_log_mx")
+                ]["value"].mean()
+                for m in models
+            ],
         )
 
         # Interpretability (fixed scores)
@@ -118,8 +129,6 @@ def build_scorecard(
                 lower_is_better=True,
             )
 
-        scores[model]["interval_calibration"] = 3
-
     rows = []
     for model in models:
         row = {"model": model}
@@ -141,28 +150,34 @@ def recommend_model(
     age_focus: str = "all",
     needs_interpretability: bool = False,
     compute_budget: str = "any",
+    objective: str = "log_rates",
+    structured_only: bool = False,
 ) -> str:
-    """Simple decision tree for model recommendation."""
-    if needs_interpretability:
-        if horizon <= 5:
+    """Return the empirical winner for a stated use case.
+
+    Recommendations summarize this benchmark; they are not universal rankings.
+    ``structured_only`` excludes the two simple baselines and fully neural models.
+    ``compute_budget`` is retained for API compatibility.
+    """
+    del compute_budget
+    structured_only = structured_only or needs_interpretability
+
+    if structured_only:
+        if history_length < 25 or horizon <= 5:
             return "lc_resnet"
-        if history_length < 30:
-            return "random_walk"
-        return "lee_carter"
+        if age_focus == "elderly" or objective == "life_expectancy":
+            return "hyndman_ullah"
+        if objective == "annuity":
+            return "lee_carter"
+        return "lee_miller"
 
-    if history_length < 25:
-        return "random_walk"
-
-    if age_focus == "elderly":
-        if horizon <= 10:
-            return "cbd"
-        return "lee_carter"
-
-    if horizon <= 5:
-        return "lc_resnet"
-    if horizon <= 10:
-        return "poisson_lc"
-    return "lee_carter"
+    if history_length < 25 or age_focus == "elderly":
+        return "frozen_rates"
+    if objective == "life_expectancy" and horizon > 10:
+        return "hyndman_ullah"
+    if objective == "annuity":
+        return "random_walk" if horizon <= 10 else "ffnn_embeddings"
+    return "random_walk"
 
 
 def _get_mean(df: pd.DataFrame, model: str, metric: str,

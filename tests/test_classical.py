@@ -50,7 +50,7 @@ class TestLeeCarter:
 @pytest.mark.skipif(not DATA_AVAILABLE, reason="HMD data not downloaded")
 class TestAllClassicalModels:
     @pytest.mark.parametrize("name", [
-        "lee_carter", "lee_miller", "bms", "poisson_lc",
+        "lee_carter", "lee_miller", "poisson_lc",
         "hyndman_ullah", "random_walk", "frozen_rates",
     ])
     def test_fit_forecast_shape(self, name, france_data):

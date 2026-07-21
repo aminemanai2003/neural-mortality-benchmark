@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 from mortality.data.loader import load_country
+from mortality.evaluation.decision_framework import recommend_model
 from mortality.evaluation.diebold_mariano import diebold_mariano_test
 from mortality.evaluation.rolling_origin import rolling_origin_eval
 from mortality.evaluation.scenarios import age_group_eval, short_history_eval
@@ -98,3 +99,15 @@ class TestDieboldMariano:
         e1, e2 = rng.normal(0, 1, 40), rng.normal(0, 1, 40)
         _, p = diebold_mariano_test(e1, e2)
         assert 0.0 <= p <= 1.0
+
+
+class TestDecisionFramework:
+    def test_log_rate_recommendation_matches_benchmark(self):
+        assert recommend_model(50, 20) == "random_walk"
+
+    def test_structured_short_horizon_recommendation(self):
+        assert recommend_model(50, 5, structured_only=True) == "lc_resnet"
+
+    def test_long_horizon_objective_specific_recommendations(self):
+        assert recommend_model(50, 20, objective="life_expectancy") == "hyndman_ullah"
+        assert recommend_model(50, 20, objective="annuity") == "ffnn_embeddings"

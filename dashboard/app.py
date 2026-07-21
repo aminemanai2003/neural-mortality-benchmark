@@ -87,8 +87,10 @@ with tab1:
             fig2, ax2 = plt.subplots(figsize=(12, 4))
             ax2.plot(data["years"], e0_series, linewidth=2)
             ax2.set_xlabel("Year")
-            ax2.set_ylabel("e0")
-            ax2.set_title(f"Life expectancy at birth — {COUNTRIES[country_code]}")
+            ax2.set_ylabel("e0 (truncated at age 100)")
+            ax2.set_title(
+                f"Age-100-truncated life expectancy — {COUNTRIES[country_code]}"
+            )
             ax2.grid(True, alpha=0.3)
             st.pyplot(fig2)
             plt.close()
@@ -133,7 +135,7 @@ with tab3:
 
     try:
         data = load_country("FRATNP")
-        models_to_compare = ["lee_carter", "poisson_lc", "random_walk", "lc_resnet"]
+        models_to_compare = ["lee_carter", "poisson_lc", "random_walk", "lc_resnet", "cbd"]
         mx_by_model = {}
 
         for name in models_to_compare:
@@ -142,7 +144,15 @@ with tab3:
                 model.fit(data["log_mx"], data["ages"], data["years"],
                           data.get("exposures"), data.get("deaths"))
                 fc = model.forecast(10)
-                mx_by_model[name] = np.exp(fc[:, -1])
+                if name == "cbd":
+                    # CBD forecasts ages 60--100. Younger rates are immaterial to an
+                    # annuity starting at 65, but a full 0--100 vector is required.
+                    mx = data["mx"][:, -1].copy()
+                    positions = np.searchsorted(data["ages"], model.forecast_ages)
+                    mx[positions] = np.exp(fc[:, -1])
+                    mx_by_model[name] = mx
+                else:
+                    mx_by_model[name] = np.exp(fc[:, -1])
 
         if mx_by_model:
             pricing = price_annuity_portfolio(mx_by_model)
@@ -161,25 +171,30 @@ with tab3:
 
 with tab4:
     st.subheader("Model Recommendation Engine")
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     with col1:
         hist_len = st.slider("History length (years)", 15, 70, 50)
     with col2:
         fc_horizon = st.slider("Forecast horizon (years)", 1, 30, 10)
     with col3:
         age_focus = st.selectbox("Age focus", ["all", "young", "working", "elderly"])
+    with col4:
+        objective = st.selectbox(
+            "Primary objective", ["log_rates", "life_expectancy", "annuity"]
+        )
 
-    interp = st.checkbox("Needs regulatory interpretability?")
+    interp = st.checkbox("Restrict to models with a transparent statistical skeleton?")
 
-    recommended = recommend_model(hist_len, fc_horizon, age_focus, interp)
+    recommended = recommend_model(
+        hist_len, fc_horizon, age_focus, interp, objective=objective
+    )
     st.success(f"**Recommended model: {recommended}**")
 
     st.markdown("""
-    **Decision logic:**
-    - Short history (<25 years) → Random walk (neural networks need more data)
-    - Elderly ages → CBD (designed for 60+, used by regulators)
-    - Short horizon (≤5 years) → LC-ResNet (neural correction helps most)
-    - Medium horizon (≤10 years) → Poisson Lee-Carter
-    - Long horizon (>10 years) → Lee-Carter (stable extrapolation)
-    - If interpretability required → LC-ResNet at short horizons, LC otherwise
+    **Decision logic:** recommendations reproduce the empirical winners in this
+    benchmark and depend on the selected loss. The random walk leads full-grid
+    log-rate accuracy; H-U leads 20-year life-expectancy accuracy; the FFNN leads
+    20-year annuity-factor accuracy; and LC-ResNet leads structured models at one
+    year. A transparent-skeleton restriction excludes simple baselines and fully
+    neural models. These are benchmark-specific recommendations, not universal rules.
     """)

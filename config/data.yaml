@@ -24,7 +24,7 @@ ages:
   start: 0
   end: 100
 
-sexes: [Male, Female]
+sexes: [Total]
 
 paths:
   raw: data/raw

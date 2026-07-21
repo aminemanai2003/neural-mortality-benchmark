@@ -4,8 +4,6 @@ classical:
     kt_model: rwd
   lee_miller:
     adjust_e0: true
-  bms:
-    linearity_test_alpha: 0.05
   poisson_lc:
     max_iter: 500
     tol: 1.0e-6
@@ -21,14 +19,10 @@ classical:
 neural:
   common:
     seed: 42
-    n_ensemble: 5
     epochs: 200
     patience: 20
-    batch_size: 32
     lr: 0.001
     weight_decay: 1.0e-4
-    mc_dropout_rate: 0.1
-    mc_dropout_samples: 100
 
   lstm_kt:
     hidden_size: 64
@@ -58,4 +52,4 @@ hybrid:
   lc_resnet:
     residual_hidden: [64, 32]
     shrinkage_lambda: 0.1
-    multi_population: true
+    multi_population: false

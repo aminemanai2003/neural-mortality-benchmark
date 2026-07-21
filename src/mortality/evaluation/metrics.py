@@ -36,7 +36,7 @@ def rmse_annuity_65(
     mx_pred_series: np.ndarray,
     interest_rate: float = 0.02,
 ) -> float:
-    """RMSE of whole-life annuity-due at 65 across forecast years."""
+    """RMSE of the annuity-due at 65 through the final modeled age."""
     n_years = mx_true_series.shape[1]
     a_true = np.array(
         [annuity_due(mx_true_series[:, t], 65, interest_rate) for t in range(n_years)]

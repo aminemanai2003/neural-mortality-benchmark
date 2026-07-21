@@ -3,7 +3,7 @@
 Two-factor model for older ages (typically 60+):
     logit q(x,t) = kt1 + kt2 * (x - x_bar)
 
-Standard model used by regulators for longevity risk.
+A widely used two-factor model designed for older-age mortality.
 """
 from __future__ import annotations
 

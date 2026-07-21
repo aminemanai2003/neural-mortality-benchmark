@@ -3,13 +3,13 @@
 The hybrid model:
 1. Fits a Poisson Lee-Carter as the interpretable skeleton.
 2. Trains a small neural network to learn the structured residuals
-   (non-linearities, cohort effects) from the LC fit.
+   (non-linear age-time structure) from the LC fit.
 3. Uses a horizon-dependent shrinkage: the neural correction is
    multiplied by exp(-lambda * h), so at long horizons the model
    reverts to the stable LC extrapolation.
 
-This preserves interpretability (ax, bx, kt are available) while
-capturing patterns that LC misses at short/medium horizons.
+This retains an interpretable skeleton (ax, bx, kt remain available), while
+the residual correction itself is a black-box component.
 """
 from __future__ import annotations
 
