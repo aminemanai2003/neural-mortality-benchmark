@@ -1,5 +1,10 @@
 # Kit CV / LinkedIn — Mortality Benchmark
 
+## Établissements
+
+- ESPRIT School of Engineering, Tunisie
+- Institut du Risque et de l’Assurance (IRA), Le Mans Université, France — M1 Actuariat à partir de l’année universitaire 2026-2027
+
 ## Bullets CV
 
 - Conçu un benchmark reproductible de 14 modèles de mortalité sur 8 populations HMD, avec validation rolling-origin, scénarios COVID/historique court et métriques actuarielles tronquées à 100 ans (`e0`, rente à 65 ans).

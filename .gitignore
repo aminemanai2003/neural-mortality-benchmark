@@ -17,6 +17,7 @@ Thumbs.db
 .env
 *.secret
 .ipynb_checkpoints/
+tmp/
 
 # LaTeX build artifacts
 paper/*.aux

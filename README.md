@@ -10,6 +10,14 @@ A reproducible comparison of 14 mortality-forecasting implementations, including
 
 ---
 
+## Author and institutions
+
+**Author:** Amine Manai
+
+**Associated institutions:**
+- ESPRIT School of Engineering, Tunisia
+- Institut du Risque et de l'Assurance (IRA), Le Mans Universite, France — incoming M1 Actuariat student, 2026-2027
+
 ## Highlights
 
 - **14 implementations**: 5 classical structural models + 2 simple baselines + 6 neural models + 1 hybrid

@@ -1,5 +1,7 @@
 # Benchmark de modèles de mortalité classiques et neuronaux
 
+**Établissements associés.** ESPRIT School of Engineering, Tunisie ; Institut du Risque et de l’Assurance (IRA), Le Mans Université, France — M1 Actuariat à partir de l’année universitaire 2026–2027.
+
 ## Résumé exécutif
 
 Ce projet compare 14 implémentations de prévision de mortalité sur huit populations de la Human Mortality Database (HMD) : cinq modèles statistiques structurés, deux baselines simples, six architectures neuronales et un modèle hybride proposé, LC-ResNet. Les données couvrent les âges 0 à 100 et, selon le pays, les années 1950 à 2023.

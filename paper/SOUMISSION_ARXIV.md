@@ -35,7 +35,8 @@ Ne pas envoyer de message de masse et ne pas présenter l’endorsement comme un
 >
 > Cordialement,
 > Amine Manai
-> [affiliation actuelle confirmée]
+> ESPRIT School of Engineering, Tunisia
+> Incoming M1 Actuariat student, Institut du Risque et de l'Assurance (IRA), Le Mans Universite, France
 > [adresse e-mail valide]
 
 ## Métadonnées
@@ -59,7 +60,7 @@ https://github.com/aminemanai2003/neural-mortality-benchmark
 ## Contrôles avant envoi aux endorsers
 
 - [ ] Lire le PDF final en entier et pouvoir défendre chaque chiffre.
-- [ ] Confirmer personnellement l’affiliation « ESPRIT School of Engineering » et l’adresse `amine.manai@esprit.tn`; les modifier si elles ne sont plus valides.
+- [ ] Confirmer personnellement l’affiliation « ESPRIT School of Engineering », le statut « incoming M1 Actuariat » à l’Institut du Risque et de l’Assurance (IRA), Le Mans Université, et l’adresse `amine.manai@esprit.tn`; les modifier si elles ne sont plus valides.
 - [ ] Vérifier que le dépôt GitHub public correspond exactement au PDF.
 - [ ] Exécuter `pytest -q` et `ruff check .`.
 - [ ] Exécuter `python scripts/run_case_study.py` et comparer `results/case_study.csv` aux deux tableaux EUR.

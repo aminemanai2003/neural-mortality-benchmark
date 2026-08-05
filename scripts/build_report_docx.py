@@ -377,7 +377,11 @@ def build_document() -> Document:
         if line.startswith("# "):
             document.add_paragraph(line[2:], style="Title")
             subtitle = document.add_paragraph(style="Report Subtitle")
-            subtitle.add_run("Amine Manai  •  Rapport technique  •  Juillet 2026")
+            subtitle.add_run(
+                "Amine Manai  •  ESPRIT School of Engineering  •  "
+                "Institut du Risque et de l'Assurance, Le Mans Universite  •  "
+                "Rapport technique  •  Juillet 2026"
+            )
             index += 1
             continue
         if line.startswith("## "):
