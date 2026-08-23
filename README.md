@@ -25,7 +25,8 @@ A reproducible benchmark of 14 classical, baseline, neural and hybrid mortality-
 - **Eight national populations:** France, England and Wales, USA, Japan, Italy, Spain, Sweden and the Netherlands.
 - **Rolling-origin validation:** origins from 1990 to 2018 and horizons of 1, 5, 10 and 20 years when observations are available.
 - **Actuarial metrics:** error on period life expectancy at birth and an annuity-due factor at age 65, both truncated at age 100.
-- **Targeted scenarios:** short histories, the 2020–2022 mortality shock and separate age segments.
+- **Targeted scenarios:** short histories, the reported 2020–2022 mortality-shock
+  window and separate age segments.
 - **Illustrative liability study:** 1,000 French annuitants valued with 2033 projected rates and a permanent 20% mortality-rate reduction.
 
 | Classical and baseline | Neural | Hybrid |
