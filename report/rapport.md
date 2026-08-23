@@ -1,6 +1,8 @@
 # Benchmark de modèles de mortalité classiques et neuronaux
 
-**Établissements associés.** ESPRIT School of Engineering, Tunisie ; Institut du Risque et de l’Assurance (IRA), Le Mans Université, France — M1 Actuariat à partir de l’année universitaire 2026–2027.
+**Auteur.** Amine Manai — étudiant en M1 Actuariat à Le Mans Université, au sein de l’Institut du Risque et de l’Assurance, dans le cadre d’un double diplôme avec le cursus d’ingénierie Data Science d’ESPRIT.
+
+**Statut.** Rapport technique associé à un working paper indépendant, version 0.1.0. Le manuscrit n’a pas été évalué par les pairs et n’est pas présenté comme une publication acceptée.
 
 ## Résumé exécutif
 
@@ -29,7 +31,9 @@ La difficulté pratique n’est donc pas seulement de prévoir correctement les 
 
 Le benchmark utilise les taux centraux de mortalité `mx`, les expositions et les décès de la HMD pour la France, l’Angleterre et le Pays de Galles, les États-Unis, le Japon, l’Italie, l’Espagne, la Suède et les Pays-Bas. La population totale est utilisée. Les taux nuls ou manquants sont remplacés par un plancher de `10^-6` avant le passage au logarithme. Les années terminales absentes ne sont pas imputées.
 
-La HMD autorise l’utilisation de ses données après inscription, mais leur redistribution n’est pas permise. Le dépôt contient donc le code de téléchargement et de traitement, mais pas les fichiers HMD bruts.
+Les estimations produites par la HMD sont publiées sous licence CC BY 4.0 ; certains fichiers d’entrée restent soumis aux conditions des fournisseurs d’origine. La HMD recommande que chaque utilisateur télécharge une copie à jour et cite précisément les sources. Le dépôt ne contient donc pas les fichiers bruts, mais fournit le code de téléchargement et de traitement.
+
+La date exacte de téléchargement du snapshot ayant produit les résultats enregistrés n’a pas été conservée. Les prochains téléchargements génèrent un manifeste local avec horodatages et empreintes SHA-256 ; de futures révisions HMD peuvent entraîner de légers écarts.
 
 ## 3. Modèles comparés
 
@@ -40,8 +44,8 @@ La HMD autorise l’utilisation de ses données après inscription, mais leur re
 3. Lee-Carter Poisson, estimé à partir des décès et des expositions.
 4. CBD, modèle à deux facteurs limité aux âges 60–100.
 5. Modèle fonctionnel de style Hyndman-Ullah : lissage par splines, six composantes fonctionnelles et marches aléatoires avec dérive sur les scores. Il s’agit d’une version simplifiée de la procédure H-U complète.
-6. Marche aléatoire avec dérive, séparément pour chaque âge.
-7. Taux gelés au dernier niveau observé.
+
+Deux baselines simples complètent la comparaison : une marche aléatoire avec dérive, ajustée séparément pour chaque âge, et les taux gelés au dernier niveau observé.
 
 ### 3.2 Modèles neuronaux
 
@@ -117,7 +121,7 @@ Le choix doit être lié à l’objectif :
 
 Les modèles sont ajustés sur la France jusqu’en 2023 et leur projection 2033 est utilisée pour un portefeuille fictif de 1 000 rentiers âgés de 65 ans, rente annuelle 12 000 €, taux d’actualisation 2 %, paiements jusqu’à 100 ans.
 
-| Modèle | Provision de base | Provision choquée | SCR longévité |
+| Modèle | Provision de base | Provision choquée | Impact du stress |
 |---|---:|---:|---:|
 | Lee-Carter | 220,05 M€ | 231,57 M€ | 11,52 M€ |
 | Lee-Carter Poisson | 219,87 M€ | 231,39 M€ | 11,52 M€ |
@@ -125,7 +129,7 @@ Les modèles sont ajustés sur la France jusqu’en 2023 et leur projection 2033
 | Marche aléatoire | 218,83 M€ | 230,54 M€ | 11,71 M€ |
 | CBD | 213,79 M€ | 226,12 M€ | 12,33 M€ |
 
-L’écart de provision atteint 6,26 M€ en incluant CBD et 1,22 M€ entre modèles couvrant tous les âges. Le SCR varie de 11,52 à 12,33 M€, soit environ 7 % d’écart relatif. Cette étude est illustrative et ne remplace pas une valorisation propre à un assureur.
+L’écart de provision atteint 6,26 M€ en incluant CBD et 1,22 M€ entre modèles couvrant tous les âges. L’augmentation de la provision sous le stress varie de 11,52 à 12,33 M€, soit environ 7 % d’écart relatif. Il s’agit d’un impact simplifié sur le passif, pas d’un SCR complet ni d’une valorisation propre à un assureur.
 
 ## 8. Limites
 
@@ -136,17 +140,18 @@ L’écart de provision atteint 6,26 M€ en incluant CBD et 1,22 M€ entre mod
 - nombres d’origines valides différents selon la date de fin de chaque pays ;
 - scénario COVID limité à un seul épisode ;
 - étude de cas sensible à l’inclusion de CBD, qui ne couvre que les âges élevés.
+- date exacte du snapshot HMD non enregistrée pour les résultats archivés.
 
 ## 9. Reproductibilité
 
 ```bash
-pip install -e ".[dev]"
-python scripts/run_benchmark.py
-python scripts/run_case_study.py
-pytest -q
+uv sync --all-extras --frozen
+uv run python scripts/run_benchmark.py
+uv run python scripts/run_case_study.py
+uv run pytest
 ```
 
-Le dépôt contient le manuscrit LaTeX, 27 312 lignes de résultats, le CSV de l’étude de cas, les tests et le dashboard Streamlit. OpenAI Codex a été utilisé pour l’édition linguistique, les vérifications de cohérence entre code et manuscrit et l’assurance qualité des documents ; l’auteur reste responsable de l’étude et de son contenu.
+Le dépôt contient un environnement verrouillé, le manuscrit LaTeX, 27 312 lignes de résultats, le CSV de l’étude de cas, les tests et le dashboard Streamlit. OpenAI Codex a été utilisé pour l’édition linguistique, les vérifications de cohérence entre code et manuscrit et l’assurance qualité des documents ; l’auteur reste responsable de l’étude et de son contenu.
 
 ## 10. Références principales
 

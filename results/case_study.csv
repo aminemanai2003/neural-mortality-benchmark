@@ -1,4 +1,4 @@
-model,forecast_year,annuity_factor,provision_per_person,total_provision_eur,base_provision_eur,shocked_provision_eur,scr_longevity_eur,scr_pct
+model,forecast_year,annuity_factor,provision_per_person,total_provision_eur,base_provision_eur,shocked_provision_eur,longevity_stress_impact_eur,stress_impact_pct
 lee_carter,2033,18.3375,220050.0,220049965.0,220049965.0,231565387.0,11515423.0,5.23
 poisson_lc,2033,18.3227,219873.0,219872508.0,219872508.0,231389793.0,11517286.0,5.24
 lc_resnet,2033,18.2681,219217.0,219216899.0,219216899.0,230799345.0,11582446.0,5.28

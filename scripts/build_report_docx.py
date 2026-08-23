@@ -379,8 +379,8 @@ def build_document() -> Document:
             subtitle = document.add_paragraph(style="Report Subtitle")
             subtitle.add_run(
                 "Amine Manai  •  ESPRIT School of Engineering  •  "
-                "Institut du Risque et de l'Assurance, Le Mans Universite  •  "
-                "Rapport technique  •  Juillet 2026"
+                "M1 Actuariat, Institut du Risque et de l'Assurance, Le Mans Universite  •  "
+                "Rapport technique  •  Aout 2026"
             )
             index += 1
             continue
@@ -429,7 +429,7 @@ def build_document() -> Document:
     core.title = "Benchmark de modèles de mortalité classiques et neuronaux"
     core.author = "Amine Manai"
     core.subject = "Mortality forecasting benchmark and actuarial model risk"
-    core.keywords = "mortalité, actuariat, Lee-Carter, deep learning, Solvabilité II"
+    core.keywords = "mortalité, actuariat, Lee-Carter, deep learning, longévité"
     return document
 
 

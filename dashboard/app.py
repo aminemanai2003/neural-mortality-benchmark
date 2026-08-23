@@ -158,7 +158,11 @@ with tab3:
             pricing = price_annuity_portfolio(mx_by_model)
             st.dataframe(pricing, use_container_width=True)
 
-            st.subheader("Solvency II Longevity Shock")
+            st.subheader("Illustrative Longevity Stress")
+            st.caption(
+                "Liability impact of a 20% mortality-rate reduction; "
+                "not a complete insurer-level SCR."
+            )
             risk = longevity_risk_analysis(mx_by_model)
             st.dataframe(risk, use_container_width=True)
 

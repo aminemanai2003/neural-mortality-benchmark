@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use this software or benchmark, please cite the working paper below."
+title: "Neural Mortality Benchmark"
+version: 0.1.0
+date-released: 2026-08-23
+type: software
+authors:
+  - family-names: Manai
+    given-names: Amine
+    email: amine.manai.tn@gmail.com
+repository-code: "https://github.com/aminemanai2003/neural-mortality-benchmark"
+url: "https://github.com/aminemanai2003/neural-mortality-benchmark/blob/main/paper/main.pdf"
+license: MIT
+abstract: >-
+  Reproducible comparison of classical, baseline, neural and hybrid mortality
+  forecasting implementations using rolling-origin validation and actuarial
+  metrics, with an illustrative French annuity liability case study.
+preferred-citation:
+  type: report
+  title: "When Should Actuaries Trust Neural Networks? A Benchmark of Classical and Neural Mortality Models with a Hybrid LC-ResNet and a Practical Decision Framework"
+  authors:
+    - family-names: Manai
+      given-names: Amine
+  year: 2026
+  institution:
+    name: "Le Mans Université — Institut du Risque et de l’Assurance"
+  status: in-preparation
+  url: "https://github.com/aminemanai2003/neural-mortality-benchmark/blob/main/paper/main.pdf"

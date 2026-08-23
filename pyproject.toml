@@ -1,13 +1,14 @@
 [build-system]
-requires = ["setuptools>=68.0"]
+requires = ["setuptools>=75", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "mortality-benchmark"
 version = "0.1.0"
-description = "Benchmark of classical and neural Lee-Carter models for mortality forecasting"
+description = "Reproducible benchmark of classical, neural and hybrid mortality forecasting models"
 readme = "README.md"
 license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 authors = [{ name = "Amine Manai" }]
 dependencies = [
@@ -27,9 +28,18 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.4",
-    "ruff>=0.4",
+    "build>=1.2",
+    "pytest>=8.3",
+    "ruff>=0.9",
 ]
+documents = ["python-docx>=1.1"]
+
+[project.urls]
+Repository = "https://github.com/aminemanai2003/neural-mortality-benchmark"
+Manuscript = "https://github.com/aminemanai2003/neural-mortality-benchmark/blob/main/paper/main.pdf"
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.ruff]
 target-version = "py311"
@@ -40,3 +50,14 @@ select = ["E", "F", "I", "W", "UP"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu", marker = "sys_platform != 'darwin'" },
+]

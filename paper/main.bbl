@@ -38,14 +38,19 @@ De~Mori, L., Haberman, S., Millossovich, P., and Zhu, R. (2025).
 \newblock Mortality forecasting via multi-task neural networks.
 \newblock {\em ASTIN Bulletin}, 55(2):313--331.
 
-\bibitem[{European Insurance and Occupational Pensions Authority},
-  2026]{eiopa2026article138}
-{European Insurance and Occupational Pensions Authority} (2026).
-\newblock Solvency {II} single rulebook: Article 138, longevity risk
-  sub-module.
+\bibitem[{European Commission}, 2015]{eiopa2026article138}
+{European Commission} (2015).
+\newblock Commission delegated regulation ({EU}) 2015/35, article 138:
+  Longevity risk sub-module.
 \newblock
-  \url{https://www.eiopa.europa.eu/rulebook/solvency-ii-single-rulebook/article-5758_en}.
-\newblock Accessed 21 July 2026.
+  \url{https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32015R0035}.
+\newblock Consolidated legislation accessed 23 August 2026.
+
+\bibitem[{Human Mortality Database}, 2026]{hmd2026agreement}
+{Human Mortality Database} (2026).
+\newblock User agreement and citation guidance.
+\newblock \url{https://www.mortality.org/Data/UserAgreement}.
+\newblock Accessed 23 August 2026.
 
 \bibitem[Hyndman and Ullah, 2007]{hyndman2007robust}
 Hyndman, R.~J. and Ullah, M.~S. (2007).

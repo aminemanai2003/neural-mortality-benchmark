@@ -25,4 +25,5 @@ def test_longevity_risk_analysis():
     mx = np.full(101, 0.01)
     result = longevity_risk_analysis({"model_a": mx})
     assert len(result) == 1
-    assert result["scr_longevity_eur"].iloc[0] > 0
+    assert result["longevity_stress_impact_eur"].iloc[0] > 0
+    assert result["stress_impact_pct"].iloc[0] > 0

@@ -8,8 +8,11 @@ The HMD uses session-based auth: we POST to /Account/Login, then download with c
 """
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 import requests
@@ -49,18 +52,22 @@ def hmd_login(session: requests.Session, username: str, password: str) -> None:
 
 def download_country(
     session: requests.Session, country_code: str, raw_dir: Path
-) -> None:
+) -> list[dict[str, object]]:
     country_dir = raw_dir / country_code
     country_dir.mkdir(parents=True, exist_ok=True)
 
     needed = []
+    records: list[dict[str, object]] = []
     for fn in ["Mx_1x1.txt", "Exposures_1x1.txt"]:
         if not (country_dir / fn).exists():
             needed.append(fn)
 
     if not needed:
         print("  All files already exist, skipping")
-        return
+        for filename in ["Mx_1x1.txt", "Exposures_1x1.txt"]:
+            target = country_dir / filename
+            records.append(file_record(country_code, filename, target, None))
+        return records
 
     for filename in needed:
         url = f"{HMD_HOST}/File/GetDocument/hmd.v6/{country_code}/STATS/{filename}"
@@ -86,7 +93,39 @@ def download_country(
 
         target = country_dir / filename
         target.write_text(content, encoding="utf-8")
+        records.append(
+            file_record(
+                country_code,
+                filename,
+                target,
+                datetime.now(UTC).isoformat(),
+            )
+        )
         print(f"  Saved {target}")
+
+    for filename in {"Mx_1x1.txt", "Exposures_1x1.txt"} - set(needed):
+        target = country_dir / filename
+        records.append(file_record(country_code, filename, target, None))
+
+    return records
+
+
+def file_record(
+    country_code: str,
+    filename: str,
+    path: Path,
+    retrieved_at: str | None,
+) -> dict[str, object]:
+    """Build a provenance record without exposing HMD credentials."""
+    content = path.read_bytes()
+    return {
+        "country": country_code,
+        "filename": filename,
+        "source_url": f"{HMD_HOST}/File/GetDocument/hmd.v6/{country_code}/STATS/{filename}",
+        "retrieved_at": retrieved_at,
+        "sha256": hashlib.sha256(content).hexdigest(),
+        "bytes": len(content),
+    }
 
 
 def main() -> None:
@@ -109,14 +148,26 @@ def main() -> None:
     })
     hmd_login(session, username, password)
 
+    records: list[dict[str, object]] = []
     for country in cfg["countries"]:
         code = country["code"]
         name = country["name"]
         print(f"{name} ({code}):")
-        download_country(session, code, raw_dir)
+        records.extend(download_country(session, code, raw_dir))
         print()
 
+    manifest = {
+        "generated_at": datetime.now(UTC).isoformat(),
+        "note": (
+            "A null retrieved_at means that the file already existed and its original "
+            "download time is unknown."
+        ),
+        "files": sorted(records, key=lambda item: (item["country"], item["filename"])),
+    }
+    manifest_path = raw_dir / "download_manifest.json"
+    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     print("Done. Data saved in", raw_dir)
+    print("Download manifest saved in", manifest_path)
 
 
 if __name__ == "__main__":

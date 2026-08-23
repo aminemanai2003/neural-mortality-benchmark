@@ -48,11 +48,12 @@ with a Hybrid LC-ResNet and a Practical Decision Framework\par}
 \vspace{14pt}
 {\normalsize Amine MANAI\par}
 \vspace{2pt}
-{\small ESPRIT School of Engineering, Tunisia; Data Science \& Actuarial Engineering\par}
-{\small Incoming M1 Actuariat student, Institut du Risque et de l'Assurance (IRA), Le Mans Universit\'e, France\par}
-{\small\texttt{amine.manai@esprit.tn}\par}
+{\small M1 Actuarial Science, Institut du Risque et de l'Assurance, Le Mans Universit\'e, France\par}
+{\small Double degree with Data Science Engineering, ESPRIT School of Engineering, Tunisia\par}
+{\small\texttt{amine.manai.tn@gmail.com}\par}
 \vspace{5pt}
-{\small July 2026\par}
+{\small Independent working paper, version 0.1.0 --- not peer reviewed\par}
+{\small August 2026\par}
 \end{center}
 
 \vspace{10pt}
@@ -60,7 +61,7 @@ with a Hybrid LC-ResNet and a Practical Decision Framework\par}
 % ══════════════════════════════════════════════════════════════
 \begin{abstract}
 \noindent
-We benchmark 14 mortality forecasting implementations---5 classical structural models, 2 simple baselines, 6 neural architectures, and a proposed hybrid---on 8 countries from the Human Mortality Database (1950--2023). Rolling-origin validation uses log-rate and age-100-truncated actuarial metrics to study short histories, forecast horizons, age segments, and the COVID-19 shock. \textbf{LC-ResNet} couples a Poisson Lee--Carter skeleton with a neural residual correction shrunk by $e^{-\lambda h}$ at horizon $h$. Key findings are benchmark-specific: the age-specific random walk with drift has the lowest full-grid log-rate error at every horizon; recurrent $\kappa_t$ replacements improve on Lee--Carter at short horizons but deteriorate sharply on 20-year actuarial metrics; frozen rates are most robust over the cumulative 2020--2022 shock window; and LC-ResNet has the lowest one-year error among structured models. On a 1{,}000-life French annuity portfolio valued from 2033 rates, the five-model provision spread is 6.26 million EUR and the longevity SCR varies by 7\% across models. The results caution against treating model complexity as a substitute for objective-specific validation.
+We benchmark 14 mortality forecasting implementations---5 classical structural models, 2 simple baselines, 6 neural architectures, and a proposed hybrid---on 8 countries from the Human Mortality Database (1950--2023). Rolling-origin validation uses log-rate and age-100-truncated actuarial metrics to study short histories, forecast horizons, age segments, and the COVID-19 shock. \textbf{LC-ResNet} couples a Poisson Lee--Carter skeleton with a neural residual correction shrunk by $e^{-\lambda h}$ at horizon $h$. Key findings are benchmark-specific: the age-specific random walk with drift has the lowest full-grid log-rate error at every horizon; recurrent $\kappa_t$ replacements improve on Lee--Carter at short horizons but deteriorate sharply on 20-year actuarial metrics; frozen rates are most robust over the cumulative 2020--2022 shock window; and LC-ResNet has the lowest one-year error among structured models. On a 1{,}000-life French annuity portfolio valued from 2033 rates, the five-model provision spread is 6.26 million EUR and the liability increase under a 20\% mortality-rate stress varies by 7\% across models. The results caution against treating model complexity as a substitute for objective-specific validation.
 
 \vspace{8pt}
 \noindent\textbf{Keywords:} Mortality Forecasting \,$\cdot$\, Lee--Carter \,$\cdot$\, Deep Learning \,$\cdot$\, Longevity Risk \,$\cdot$\, Model Risk \,$\cdot$\, Solvency II \,$\cdot$\, Benchmark
@@ -83,7 +84,7 @@ This paper fills that gap with four contributions:
     \item \textbf{A reproducible benchmark} of 14 implementations on 8 countries, evaluated with log-rate and actuarial metrics under rolling-origin validation (Sections~\ref{sec:models}--\ref{sec:results}).
     \item \textbf{LC-ResNet}, a proposed hybrid coupling a Poisson Lee--Carter skeleton with a neural residual network under horizon-dependent shrinkage (Section~\ref{sec:lcresnet}).
     \item \textbf{Objective-specific guidance} mapping history length, horizon, age segment, and transparency constraints to evidence from this benchmark (Section~\ref{sec:decision}).
-    \item \textbf{An actuarial case study} pricing a French annuity portfolio and quantifying model risk in EUR under a Solvency~II longevity shock (Section~\ref{sec:casestudy}).
+    \item \textbf{An actuarial case study} pricing a French annuity portfolio and quantifying model risk in EUR under the 20\% mortality-rate reduction used in the Solvency~II longevity stress (Section~\ref{sec:casestudy}).
 \end{enumerate}
 
 Figure~\ref{fig:pipeline} summarizes the benchmark pipeline.
@@ -134,7 +135,7 @@ Our scope is deliberately narrower than several of these studies: single-populat
 \section{Data}
 \label{sec:data}
 
-We use $1 \times 1$ central death rates $m_{x,t}$ and exposures $E_{x,t}$ from the Human Mortality Database (HMD)\footnote{\url{https://www.mortality.org}. HMD data are free but not redistributable; the repository documents how to download them.} for eight countries: France, England \& Wales, USA, Japan, Italy, Spain, Sweden, and the Netherlands. Ages span 0--100, years 1950--2023 (total population). The window includes the COVID-19 shock (2020--2023), used as a natural out-of-sample stress test.
+We use $1 \times 1$ central death rates $m_{x,t}$ and exposures $E_{x,t}$ from the Human Mortality Database (HMD)\footnote{HMD-produced estimates are distributed under CC BY 4.0; source input data can retain provider-specific terms. HMD recommends downloading a current copy and citing the source rather than circulating local copies \citep{hmd2026agreement}.} for eight countries: France, England \& Wales, USA, Japan, Italy, Spain, Sweden, and the Netherlands. Ages span 0--100, years 1950--2023 (total population). The window includes the COVID-19 shock (2020--2023), used as a natural out-of-sample stress test.
 
 The central death rate is defined as
 \begin{equation}
@@ -390,12 +391,12 @@ The provision spread across models reaches \textbf{6.26 M\,EUR} (2.8\% of the la
 
 \begin{table}[htbp]
 \centering
-\caption{Solvency II standard-formula longevity shock: permanent 20\% reduction in mortality rates \citep{eiopa2026article138}.}
-\label{tab:scr}
+\caption{Illustrative liability impact of the permanent 20\% mortality-rate reduction used in the Solvency II standard-formula longevity stress \citep{eiopa2026article138}.}
+\label{tab:stress}
 \small
 \begin{tabular}{l r r r r}
 \toprule
-Model & Base (M\,EUR) & Shocked (M\,EUR) & SCR (M\,EUR) & SCR (\%) \\
+Model & Base (M\,EUR) & Shocked (M\,EUR) & Stress impact (M\,EUR) & Impact (\%) \\
 \midrule
 Lee--Carter  & 220.05 & 231.57 & 11.52 & 5.23 \\
 Poisson LC   & 219.87 & 231.39 & 11.52 & 5.24 \\
@@ -406,7 +407,7 @@ CBD          & 213.79 & 226.12 & 12.33 & 5.77 \\
 \end{tabular}
 \end{table}
 
-The longevity SCR ranges from 11.52 to 12.33 M\,EUR---a 7\% relative spread---while the SCR-to-provision ratio ranges from 5.2\% to 5.8\%. This is an illustrative deterministic standard-formula calculation, not an insurer-specific valuation.
+The liability increase under stress ranges from 11.52 to 12.33 M\,EUR---a 7\% relative spread---and represents 5.2\% to 5.8\% of the base provision. This simplified liability-only calculation is not a complete insurer-level SCR or an insurer-specific valuation.
 
 % ══════════════════════════════════════════════════════════════
 \section{Discussion}
@@ -418,7 +419,7 @@ The longevity SCR ranges from 11.52 to 12.33 M\,EUR---a 7\% relative spread---wh
 
 \textbf{Bounded flexibility is promising but not dominant.} LC-ResNet's shrinking correction yields the lowest one-year structured-model error and classical-level 20-year actuarial errors. It ties, rather than uniquely wins, the young-age experiment and does not beat Lee--Miller at 20 years. The skeleton is transparent; the residual correction is not.
 
-\textbf{Limitations.} All models are single-population; cohort effects are not explicit; the H-U implementation uses random-walk score forecasts rather than automatic ARIMA selection; neural results use one fixed seed and one shared training budget rather than model-specific tuning; predictive distributions and statistical significance are not evaluated; and life-table quantities are truncated at age 100. Unequal country end dates create unequal numbers of valid origins, and post-2023 observations are needed to assess post-COVID trends. The case study is stylized and its five-model spread is sensitive to the inclusion of age-restricted CBD.
+\textbf{Limitations.} All models are single-population; cohort effects are not explicit; the H-U implementation uses random-walk score forecasts rather than automatic ARIMA selection; neural results use one fixed seed and one shared training budget rather than model-specific tuning; predictive distributions and statistical significance are not evaluated; and life-table quantities are truncated at age 100. Unequal country end dates create unequal numbers of valid origins, and post-2023 observations are needed to assess post-COVID trends. The case study is stylized and its five-model spread is sensitive to the inclusion of age-restricted CBD. The exact retrieval date of the HMD snapshot behind the stored benchmark was not preserved, so later HMD revisions may produce small differences.
 
 % ══════════════════════════════════════════════════════════════
 \section{Conclusion}
@@ -434,7 +435,7 @@ The complete implementation---14 benchmarked models, evaluation harness, case-st
 \begin{center}
 \url{https://github.com/aminemanai2003/neural-mortality-benchmark}
 \end{center}
-HMD data are not redistributable; the repository documents the download procedure. Benchmark rows are regenerated with \texttt{python scripts/run\_benchmark.py}; the EUR tables are regenerated with \texttt{python scripts/run\_case\_study.py} (seed 42).
+Raw HMD files are not committed; the repository documents authenticated download and the relevant HMD licence terms. The original retrieval date for the checked-in results was not preserved, while future downloads create a timestamped manifest with file hashes. Benchmark rows are regenerated with \texttt{python scripts/run\_benchmark.py}; the EUR tables are regenerated with \texttt{python scripts/run\_case\_study.py} (seed 42).
 
 \section*{Use of Generative AI}
 OpenAI Codex was used for language editing, consistency checks across code and manuscript, and document quality assurance. The author remains responsible for the study design, implementation, results, citations, and final text.

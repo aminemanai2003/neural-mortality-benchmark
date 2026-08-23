@@ -1,8 +1,9 @@
-"""Actuarial case study: annuity pricing and Solvency II longevity shock.
+"""Actuarial case study: annuity pricing and a longevity stress.
 
 Prices an annuity-due through age 100 for a portfolio of 1,000 French pensioners
-aged 65, comparing provisions across all models. Then applies a Solvency II
-type longevity shock (-20% to mortality rates) to quantify model risk.
+aged 65, comparing provisions across models. It then applies the 20% mortality
+rate reduction used in the Solvency II standard-formula longevity stress. The
+result is a simplified liability impact, not a complete insurer-level SCR.
 """
 from __future__ import annotations
 
@@ -76,15 +77,17 @@ def longevity_risk_analysis(
 
         base_total = a_base * annual_payment * n_pensioners
         shocked_total = a_shocked * annual_payment * n_pensioners
-        scr_longevity = shocked_total - base_total
+        stress_impact = shocked_total - base_total
 
         rows.append({
             "model": model_name,
             "base_provision_eur": round(base_total, 0),
             "shocked_provision_eur": round(shocked_total, 0),
-            "scr_longevity_eur": round(scr_longevity, 0),
-            "scr_pct": round(100 * scr_longevity / base_total, 2) if base_total > 0 else 0,
+            "longevity_stress_impact_eur": round(stress_impact, 0),
+            "stress_impact_pct": round(100 * stress_impact / base_total, 2)
+            if base_total > 0
+            else 0,
         })
 
-    df = pd.DataFrame(rows).sort_values("scr_longevity_eur", ascending=False)
+    df = pd.DataFrame(rows).sort_values("longevity_stress_impact_eur", ascending=False)
     return df.reset_index(drop=True)

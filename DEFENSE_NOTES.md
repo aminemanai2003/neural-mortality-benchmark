@@ -8,7 +8,7 @@ This project benchmarks classical, neural, and hybrid mortality forecasting mode
 
 ## Why This Project Matters
 
-Mortality forecasting affects life insurance pricing, annuity valuation, pension liabilities, longevity risk, and Solvency II capital calculations. In practice, actuaries need models that are not only accurate, but also stable, interpretable, reproducible, and appropriate for the business decision.
+Mortality forecasting affects life insurance pricing, annuity valuation, pension liabilities, longevity risk, and regulatory stress analysis. In practice, actuaries need models that are not only accurate, but also stable, interpretable, reproducible, and appropriate for the business decision.
 
 Neural networks can capture nonlinear age-time patterns, but they can also overfit and become difficult to explain. This project studies that trade-off through a reproducible benchmark instead of assuming that model complexity automatically improves actuarial forecasting.
 
@@ -21,7 +21,8 @@ Key points:
 - The benchmark uses multiple national populations rather than a single country.
 - The data include yearly mortality rates and exposures by age and year.
 - The implementation works with ages 0 to 100.
-- HMD raw data are not redistributed in the repository because the HMD licence requires users to download the data directly.
+- HMD estimates are available under CC BY 4.0, while some source input data retain provider-specific terms. The repository follows HMD's recommendation that users download a current copy directly.
+- The original retrieval date for the checked-in results was not recorded; future downloads create a local timestamped and hashed manifest.
 - The repository provides scripts and documentation so users with HMD access can reproduce the workflow.
 
 ## Models Used
@@ -78,7 +79,7 @@ Actuarial metrics:
 - Life-expectancy error
 - Annuity-factor error
 - EUR impact in a French annuity portfolio case study
-- Sensitivity under a Solvency II longevity shock
+- Liability sensitivity under the 20% mortality-rate reduction used by the Solvency II longevity stress
 
 This matters because the statistically best model is not always the best actuarial model. A model can perform well on global log-rate accuracy but still be less appropriate for annuity valuation or longevity-risk analysis.
 
@@ -183,7 +184,7 @@ Before presenting this project, I should be able to:
 
 ## Key Files In The Repository
 
-- `paper/main.pdf`: research paper / working manuscript
+- `paper/main.pdf`: independent working paper, not peer reviewed
 - `paper/main.tex`: LaTeX source for the paper
 - `README.md`: project overview and reproduction instructions
 - `scripts/run_benchmark.py`: benchmark entry point
